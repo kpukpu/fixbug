@@ -1,0 +1,29 @@
+.footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 20px;
+    background-color: black; /* 하단 헤더의 배경색 */
+    color: white; /* 텍스트 색상 */
+    position: fixed; /* 하단에 고정 */
+    bottom: 0; /* 화면 하단에 배치 */
+    width: 100%; /* 화면 전체 너비로 설정 */
+    box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.2); /* 위쪽 그림자 */
+}
+
+.nav-list {
+    list-style: none;
+    display: flex;
+    margin: 0;
+    padding: 0;
+}
+
+.nav-list li {
+    margin-left: 15px; /* 리스트 간격 */
+}
+
+.nav-list li a {
+    text-decoration: none;
+    color: white; /* 링크 색상 */
+    font-weight: bold;
+}
