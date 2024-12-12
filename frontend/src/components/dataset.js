@@ -1,14 +1,15 @@
 // Dataset.js
 import React, { useEffect, useRef, useState } from 'react';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 import * as d3 from 'd3';
 import './dataset.css';
-import 'leaflet/dist/leaflet.css';
 
 const Dataset = () => {
-  const svgRef = useRef(null); 
-  const selectedChartRef = useRef(null); 
-  const featureChartRef = useRef(null); 
-  const [gridData, setGridData] = useState(null); 
+  const svgRef = useRef(null);
+  const selectedChartRef = useRef(null);
+  const featureChartRef = useRef(null);
+  const [gridData, setGridData] = useState(null);
 
   // Feature Importance 데이터 정의
   const featureImportanceData = [
@@ -31,33 +32,31 @@ const Dataset = () => {
 
   useEffect(() => {
     const fetchData = async () => {
-      const svg = d3.select(svgRef.current);
-      const width = 800;
-      const height = 600;
-      const gridSize = 0.001;
+      const gridSize = 0.001; // 100m 단위
 
-      svg.attr('width', width).attr('height', height);
+      // Leaflet 지도 생성
+      const map = L.map('map', {
+        center: [36.35, 127.38],
+        zoom: 12,
+        layers: [
+          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors',
+          }),
+        ],
+      });
+
+      const overlayPane = map.getPanes().overlayPane;
+      overlayPane.appendChild(svgRef.current);
+
+      const svg = d3.select(svgRef.current)
+        .style('position', 'absolute')
+        .style('z-index', 999)
+        .style('pointer-events', 'none');
+
       svg.selectAll('*').remove();
 
       try {
-        // CSV 데이터 로드
         const csvData = await d3.csv(`${process.env.PUBLIC_URL}/data/ssookssook.csv`);
-        // 예: csvData = [ 
-        //   { "격자순번": "1", "격자100m": "다마84999", "위도": "36.19387", "경도": "127.3304", "실제값": "0", "예측값": "1" }, ...
-        // ]
-
-        const valueMap = {};
-        csvData.forEach(row => {
-          const lat = parseFloat(row["위도"]);
-          const lng = parseFloat(row["경도"]);
-          const actualVal = parseInt(row["실제값"], 10) || 0;
-          const predictVal = parseInt(row["예측값"], 10) || 0;
-
-          const aligned = alignToGrid([lng, lat], gridSize); 
-          const key = aligned.join(',');
-          valueMap[key] = { actual: actualVal, predict: predictVal };
-        });
-
         const daejeonData = await d3.json(`${process.env.PUBLIC_URL}/data/daejeon.geojson`);
         const seoGuData = await d3.json(`${process.env.PUBLIC_URL}/data/map.geojson`);
 
@@ -65,130 +64,170 @@ const Dataset = () => {
           throw new Error('GeoJSON 데이터가 비어 있습니다.');
         }
 
-        const projection = d3.geoMercator().fitSize([width, height], daejeonData);
-        const pathGenerator = d3.geoPath().projection(projection);
-
-        const zoom = d3.zoom().scaleExtent([1, 8]).on('zoom', zoomed);
-        function zoomed(event) {
-          g.attr('transform', event.transform);
-        }
-
-        svg.call(zoom);
-
-        svg
-          .append('rect')
-          .attr('width', width)
-          .attr('height', height)
-          .style('fill', 'none')
-          .style('pointer-events', 'all');
+        const valueMap = {};
+        csvData.forEach(row => {
+          const lat = parseFloat(row["위도"]);
+          const lng = parseFloat(row["경도"]);
+          const actualVal = parseInt(row["실제값"], 10) || 0;
+          const predictVal = parseInt(row["예측값"], 10) || 0;
+          const aligned = alignToGrid([lng, lat], gridSize);
+          const key = aligned.join(',');
+          valueMap[key] = { actual: actualVal, predict: predictVal };
+        });
 
         const g = svg.append('g');
 
-        // 대전시 지도
-        g.selectAll('.daejeon')
-          .data(daejeonData.features)
-          .enter()
-          .append('path')
-          .attr('class', 'daejeon')
-          .attr('d', pathGenerator)
-          .attr('fill', '#cccccc')
+        // 대전 경계 (투명한 폴리곤)
+        const polygonGroup = g.append('path')
+          .attr('class', 'daejeon-boundary')
+          .attr('fill', 'none')
           .attr('stroke', '#999999')
-          .attr('stroke-width', 0.5);
+          .attr('stroke-width', 1)
+          .style('pointer-events', 'none');
 
-        // 서구 격자
+        // 100m 격자
         const gridCells = seoGuData.features.filter(d => d.geometry && d.geometry.coordinates);
 
-        g.selectAll('.grid-cell')
+        const cells = g.selectAll('.grid-cell')
           .data(gridCells)
           .enter()
           .append('rect')
           .attr('class', 'grid-cell')
-          .attr('x', (d) => {
-            const aligned = alignToGrid(projection.invert(projection(d.geometry.coordinates)), gridSize);
-            return projection(aligned)[0];
-          })
-          .attr('y', (d) => {
-            const aligned = alignToGrid(projection.invert(projection(d.geometry.coordinates)), gridSize);
-            return projection(aligned)[1];
-          })
-          .attr('width', () => {
-            const [x1] = projection([gridSize, 0]);
-            const [x0] = projection([0, 0]);
-            return x1 - x0;
-          })
-          .attr('height', () => {
-            const [, y1] = projection([0, gridSize]);
-            const [, y0] = projection([0, 0]);
-            return y0 - y1;
-          })
-          .attr('stroke', '#b1e7db')   
-          .attr('stroke-width', 0.05) 
+          .style('pointer-events', 'all')
+          .attr('stroke', '#000000')      
+          .attr('stroke-width', 0.1)      
           .attr('fill', (d) => {
-            const aligned = alignToGrid(projection.invert(projection(d.geometry.coordinates)), gridSize);
+            const coords = d.geometry.coordinates;
+            const aligned = alignToGrid([coords[0], coords[1]], gridSize);
             const key = aligned.join(',');
-            const vals = valueMap[key] || {actual:0, predict:0};
+            const vals = valueMap[key] || { actual:0, predict:0 };
             return getColor(vals.actual, vals.predict);
           })
-          .on('mouseover', function (event, d) {
-            d3.select(this).attr('fill', '#ffcc00');
+          .style('opacity', 0.5) // 투명도 적용
+          .on('mouseover', function() {
+            d3.select(this).attr('fill', '#ffcc00').style('opacity',1);
           })
-          .on('mouseout', function (event, d) {
-            const aligned = alignToGrid(projection.invert(projection(d.geometry.coordinates)), gridSize);
+          .on('mouseout', function(event, d) {
+            const coords = d.geometry.coordinates;
+            const aligned = alignToGrid([coords[0], coords[1]], gridSize);
             const key = aligned.join(',');
             const vals = valueMap[key] || {actual:0, predict:0};
-            d3.select(this).attr('fill', getColor(vals.actual, vals.predict));
+            d3.select(this)
+              .attr('fill', getColor(vals.actual, vals.predict))
+              .style('opacity', 0.5); // 마우스 아웃 시 다시 투명도 적용
           })
           .on('click', function (event, d) {
-            if (!d.geometry || !d.geometry.coordinates) {
-              console.error('Invalid geometry:', d.geometry);
-              return;
-            }
-            const coords = projection.invert(projection(d.geometry.coordinates));
-            console.log('Computed coordinates:', coords);
-            zoomToFeature(d);
-            sendCoordinatesToBackend(coords);
+            if (!d.geometry || !d.geometry.coordinates) return;
+            const coords = d.geometry.coordinates;
+            zoomToFeature(d, map);
+            sendCoordinatesToBackend([coords[0], coords[1]]);
           });
 
+        function update() {
+          const bounds = map.getBounds();
+          const topLeft = map.latLngToLayerPoint(bounds.getNorthWest());
+          const bottomRight = map.latLngToLayerPoint(bounds.getSouthEast());
+
+          const width = bottomRight.x - topLeft.x;
+          const height = bottomRight.y - topLeft.y;
+
+          svg
+            .attr('width', width)
+            .attr('height', height)
+            .style('left', topLeft.x + 'px')
+            .style('top', topLeft.y + 'px');
+
+          g.attr('transform', `translate(${-topLeft.x}, ${-topLeft.y})`);
+
+          cells
+            .attr('x', (d) => {
+              const coords = d.geometry.coordinates;
+              const latlngTopLeft = L.latLng(coords[1], coords[0]);
+              const pointTopLeft = map.latLngToLayerPoint(latlngTopLeft);
+              return pointTopLeft.x;
+            })
+            .attr('y', (d) => {
+              const coords = d.geometry.coordinates;
+              const latlngTopLeft = L.latLng(coords[1], coords[0]);
+              const pointTopLeft = map.latLngToLayerPoint(latlngTopLeft);
+              return pointTopLeft.y;
+            })
+            .attr('width', (d) => {
+              const coords = d.geometry.coordinates;
+              const latlngTopLeft = L.latLng(coords[1], coords[0]);
+              const latlngBottomRight = L.latLng(coords[1]+gridSize, coords[0]+gridSize);
+              const pointTopLeft = map.latLngToLayerPoint(latlngTopLeft);
+              const pointBottomRight = map.latLngToLayerPoint(latlngBottomRight);
+              return pointBottomRight.x - pointTopLeft.x;
+            })
+            .attr('height', (d) => {
+              const coords = d.geometry.coordinates;
+              const latlngTopLeft = L.latLng(coords[1], coords[0]);
+              const latlngBottomRight = L.latLng(coords[1]+gridSize, coords[0]+gridSize);
+              const pointTopLeft = map.latLngToLayerPoint(latlngTopLeft);
+              const pointBottomRight = map.latLngToLayerPoint(latlngBottomRight);
+              return pointTopLeft.y - pointBottomRight.y;
+            });
+
+          const geometry = daejeonData.features[0].geometry;
+          let polygonCoords;
+          if (geometry.type === "MultiPolygon") {
+            polygonCoords = geometry.coordinates[0][0];
+          } else if (geometry.type === "Polygon") {
+            polygonCoords = geometry.coordinates[0];
+          } else {
+            console.error("지원하지 않는 geometry type:", geometry.type);
+            polygonCoords = [];
+          }
+
+          polygonCoords = polygonCoords.filter(coord =>
+            Array.isArray(coord) &&
+            coord.length === 2 &&
+            typeof coord[0] === 'number' &&
+            typeof coord[1] === 'number'
+          );
+
+          if (polygonCoords.length > 0) {
+            const pathData = polygonCoords.map(coord => {
+              const point = map.latLngToLayerPoint([coord[1], coord[0]]);
+              return [point.x, point.y];
+            });
+            const d = d3.line()(pathData);
+            polygonGroup.attr('d', d);
+          } else {
+            polygonGroup.attr('d', null);
+          }
+        }
+
+        map.on('moveend zoomend', update);
+        update();
+
         function alignToGrid(coordinates, gridSize) {
-          const [lng, lat] = coordinates; 
+          const [lng, lat] = coordinates;
           const x = Math.floor(lng / gridSize) * gridSize;
           const y = Math.floor(lat / gridSize) * gridSize;
           return [x, y];
         }
 
         function getColor(actual, predict) {
-          if (actual === 1 && predict === 1) {
-            return '#00FF00'; // 초록
-          } else if (actual === 1 && predict === 0) {
-            return '#9b111e'; // 빨강
-          } else if (actual === 0 && predict === 1) {
-            return '#0000FF'; // 파랑
-          } else {
-            return '#ffffff'; // 둘다 0이면 흰색
-          }
+          if (actual === 1 && predict === 1) return '#00FF00';
+          else if (actual === 1 && predict === 0) return '#9b111e';
+          else if (actual === 0 && predict === 1) return '#0000FF';
+          else return '#ffffff';
         }
 
         async function sendCoordinatesToBackend(coords) {
           try {
-            if (!coords || coords.length !== 2 || isNaN(coords[0]) || isNaN(coords[1])) {
-              console.error('Invalid coordinates:', coords);
-              return;
-            }
+            if (!coords || coords.length !== 2 || isNaN(coords[0]) || isNaN(coords[1])) return;
             const response = await fetch('http://127.0.0.1:8000/api/get_xy/', {
               method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                longitude: coords[0],
-                latitude: coords[1],
-              }),
+              headers: {'Content-Type': 'application/json'},
+              body: JSON.stringify({ longitude: coords[0], latitude: coords[1] }),
             });
 
             if (response.ok) {
               const data = await response.json();
-              console.log('백엔드 응답:', data);
-              setGridData(data.data[0]); 
+              setGridData(data.data[0]);
             } else {
               console.error('백엔드 요청 실패:', response.status);
             }
@@ -197,25 +236,11 @@ const Dataset = () => {
           }
         }
 
-        function zoomToFeature(feature) {
-          const projected = projection(feature.geometry.coordinates);
-          if (!projected || projected.includes(NaN)) {
-            console.error('Projection failed for coordinates:', feature.geometry.coordinates);
-            return;
-          }
-
-          const [x, y] = projected;
-          const scale = 6;
-          const translate = [width / 2 - scale * x, height / 2 - scale * y];
-
-          svg
-            .transition()
-            .duration(750)
-            .call(
-              zoom.transform,
-              d3.zoomIdentity.translate(translate[0], translate[1]).scale(scale)
-            );
+        function zoomToFeature(feature, map) {
+          const coords = feature.geometry.coordinates;
+          map.setView([coords[1], coords[0]], 15);
         }
+
       } catch (error) {
         console.error('GeoJSON 데이터를 로드하는 중 에러 발생:', error);
       }
@@ -224,7 +249,6 @@ const Dataset = () => {
     fetchData();
   }, []);
 
-  // 선택한 격자 데이터를 시각화하는 useEffect
   useEffect(() => {
     if (gridData) {
       renderSelectedChart(gridData);
@@ -233,15 +257,13 @@ const Dataset = () => {
     }
   }, [gridData]);
 
-  // 컴포넌트 마운트 시 Feature Importance 차트를 렌더링
   useEffect(() => {
     renderFeatureImportanceChart();
-  }, []); // 빈 배열로 한 번만 실행
+  }, []);
 
-  // 선택한 격자 데이터 시각화 함수
   function renderSelectedChart(data) {
     const chartElement = d3.select(selectedChartRef.current);
-    chartElement.selectAll('*').remove(); 
+    chartElement.selectAll('*').remove();
 
     const ageData = [
       { ageGroup: '유아', value: data.realkid || 0 },
@@ -324,10 +346,9 @@ const Dataset = () => {
       .text('연령대');
   }
 
-  // Feature Importance 차트 시각화 함수
   function renderFeatureImportanceChart() {
     const chartElement = d3.select(featureChartRef.current);
-    chartElement.selectAll('*').remove(); 
+    chartElement.selectAll('*').remove();
 
     const data = featureImportanceData;
 
@@ -352,7 +373,7 @@ const Dataset = () => {
       .padding(0.2);
 
     const xAxis = d3.axisBottom(xScale)
-      .tickFormat(d => d); // 필요에 따라 포맷 조정 가능
+      .tickFormat(d => d);
 
     chartGroup
       .append('g')
@@ -361,7 +382,7 @@ const Dataset = () => {
       .selectAll('text')
       .attr('transform', 'rotate(-45)')
       .style('text-anchor', 'end')
-      .style('fill', '#ffffff'); // 축 레이블 색상 변경
+      .style('fill', '#ffffff');
 
     const yScale = d3
       .scaleLinear()
@@ -370,14 +391,13 @@ const Dataset = () => {
 
     const yAxis = d3.axisLeft(yScale)
       .ticks(5)
-      .tickFormat(d3.format(".2f")); // 소수점 2자리까지 표시
+      .tickFormat(d3.format(".2f"));
 
     chartGroup.append('g')
       .call(yAxis)
       .selectAll('text')
-      .style('fill', '#ffffff'); // 축 레이블 색상 변경
+      .style('fill', '#ffffff');
 
-    // 막대 추가
     chartGroup
       .selectAll('.feature-bar')
       .data(data)
@@ -388,7 +408,7 @@ const Dataset = () => {
       .attr('y', (d) => yScale(d.importance))
       .attr('width', xScale.bandwidth())
       .attr('height', (d) => height - yScale(d.importance))
-      .attr('fill', '#ff7f0e'); // Feature Importance 막대 색상 변경
+      .attr('fill', '#ff7f0e');
 
     // Y축 레이블
     chartGroup
@@ -407,18 +427,18 @@ const Dataset = () => {
       .text('Feature');
   }
 
-  // 선택한 격자 데이터 차트를 클리어하는 함수
   function clearSelectedChart() {
     const chartElement = d3.select(selectedChartRef.current);
-    chartElement.selectAll('*').remove(); 
+    chartElement.selectAll('*').remove();
   }
 
   return (
     <main className="main-content">
       <h1>GeoJSON Grid Map</h1>
-      <div className="map-container">
-        <svg ref={svgRef}></svg>
-        <div className="info-container">
+      <div className="map-container" style={{ position: 'relative' }}>
+        <div id="map" style={{ width: '800px', height: '600px' }}></div>
+        <svg ref={svgRef} style={{ position: 'absolute', top: 0, left: 0 }}></svg>
+        <div className="info-container" style={{ position: 'relative', zIndex: 999 }}>
           <div className="info-box">
             <h2>선택한 격자 데이터</h2>
             {gridData ? (
