@@ -1,0 +1,44 @@
+.main-content {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: center;
+    height: 100vh; /* 화면 전체 높이 */
+    background-color: #555;
+    background-image: url('dongguk_logo.png'); /* 로고 이미지 경로 */
+    background-repeat: no-repeat;
+    background-size: 40%; /* 로고 크기 맞춤 */
+    background-position: center;
+    padding-top: 90px;
+}
+
+.content {
+    text-align: center; /* 텍스트 가운데 정렬 */
+}
+.content h1 {
+    font-size: 90px;
+    margin-bottom: 10px;
+}
+
+.content h2 {
+    font-size: 70px;
+    font-weight: bold;
+    margin-bottom: 20px;
+}
+
+.project-button {
+    padding: 10px 20px;
+    font-size: 50px;
+    border: none;
+    border-radius: 5px;
+    background-color: black;
+    color: white;
+    cursor: pointer;
+    margin-top: 100px; /* 기존 20px에서 40px로 수정 */
+}
+
+.project-button:hover {
+    background-color: white;
+    color: black;
+    transition: 0.3s;
+}

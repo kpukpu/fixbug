@@ -1,0 +1,76 @@
+/* dataset.css */
+
+.main-content {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+  height: 100vh;
+  background-color: #555;
+  background-image: url('dongguk_logo.png');
+  background-repeat: no-repeat;
+  background-size: 40%;
+  background-position: center;
+  padding-top: 90px;
+}
+
+.map-container {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 70px;
+}
+
+.content {
+  text-align: center;
+}
+
+.content h1 {
+  font-size: 120px;
+  margin-bottom: 20px;
+}
+
+svg {
+  border: 1px solid #ccc;
+  margin-top: 20px;
+}
+
+path {
+  cursor: pointer;
+  transition: fill 0.2s;
+}
+
+path:hover {
+  fill: #ffcc00;
+}
+
+.info-box {
+  width: 50%;
+  height: auto;
+  background-color: rgb(19, 18, 18);
+  border: 1px solid #ccc;
+  padding: 20px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  overflow-y: auto;
+}
+
+/* 그래프 내부 텍스트 스타일 */
+.info-box text {
+  fill: #ffffff;
+  font-size: 12px;
+}
+
+/* 막대 스타일 */
+.bar {
+  fill: #69b3a2;
+}
+
+/* 축 레이블 스타일 */
+.axis text {
+  fill: #ffffff;
+}
+
+.axis path,
+.axis line {
+  stroke: #ffffff;
+}
