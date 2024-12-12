@@ -2,11 +2,32 @@
 import React, { useEffect, useRef, useState } from 'react';
 import * as d3 from 'd3';
 import './dataset.css';
+import 'leaflet/dist/leaflet.css';
 
 const Dataset = () => {
   const svgRef = useRef(null); 
-  const chartRef = useRef(null); 
+  const selectedChartRef = useRef(null); 
+  const featureChartRef = useRef(null); 
   const [gridData, setGridData] = useState(null); 
+
+  // Feature Importance 데이터 정의
+  const featureImportanceData = [
+    { feature: '위도', importance: 0.2032174616968298 },
+    { feature: '경도', importance: 0.16670527622852893 },
+    { feature: '평균_토지_공시지가', importance: 0.048534008 },
+    { feature: '평균_토지_면적', importance: 0.035985845188414405 },
+    { feature: '합계_토지_면적', importance: 0.035915545 },
+    { feature: '평균_토지대장_공시지가', importance: 0.03382206 },
+    { feature: '합계_토지필지수', importance: 0.018259208 },
+    { feature: '합계_토지_지목수_계', importance: 0.017903365 },
+    { feature: '인구_연령_20대', importance: 0.017359783796625047 },
+    { feature: '합계_토지_지목수_전', importance: 0.015415886802757003 },
+    { feature: '인구_연령_40대', importance: 0.014241199 },
+    { feature: '합계_토지_지목수_구거', importance: 0.014235885155369579 },
+    { feature: '최대_건축물_사용승인일', importance: 0.013660690780757772 },
+    { feature: '인구_연령_30대', importance: 0.012676483816991647 },
+    { feature: '평균_건물_일반_지상층수', importance: 0.012559764048248817 },
+  ];
 
   useEffect(() => {
     const fetchData = async () => {
@@ -203,14 +224,23 @@ const Dataset = () => {
     fetchData();
   }, []);
 
+  // 선택한 격자 데이터를 시각화하는 useEffect
   useEffect(() => {
     if (gridData) {
-      renderBarChart(gridData);
+      renderSelectedChart(gridData);
+    } else {
+      clearSelectedChart();
     }
   }, [gridData]);
 
-  function renderBarChart(data) {
-    const chartElement = d3.select(chartRef.current);
+  // 컴포넌트 마운트 시 Feature Importance 차트를 렌더링
+  useEffect(() => {
+    renderFeatureImportanceChart();
+  }, []); // 빈 배열로 한 번만 실행
+
+  // 선택한 격자 데이터 시각화 함수
+  function renderSelectedChart(data) {
+    const chartElement = d3.select(selectedChartRef.current);
     chartElement.selectAll('*').remove(); 
 
     const ageData = [
@@ -277,20 +307,110 @@ const Dataset = () => {
       .attr('height', (d) => height - yScale(d.value))
       .attr('fill', '#69b3a2');
 
+    // Y축 레이블
     chartGroup
       .append('text')
-      .attr('text-anchor', 'end')
-      .attr('x', -40)
-      .attr('y', -10)
-      .attr('dy', '.75em')
+      .attr('text-anchor', 'middle')
+      .attr('transform', `translate(${-60}, ${height / 2}) rotate(-90)`)
+      .attr('fill', '#ffffff')
       .text('인구 수');
 
+    // X축 레이블
     chartGroup
       .append('text')
-      .attr('text-anchor', 'end')
-      .attr('x', width + 20)
-      .attr('y', height + 40)
+      .attr('text-anchor', 'middle')
+      .attr('transform', `translate(${width / 2}, ${height + 40})`)
+      .attr('fill', '#ffffff')
       .text('연령대');
+  }
+
+  // Feature Importance 차트 시각화 함수
+  function renderFeatureImportanceChart() {
+    const chartElement = d3.select(featureChartRef.current);
+    chartElement.selectAll('*').remove(); 
+
+    const data = featureImportanceData;
+
+    const margin = { top: 20, right: 20, bottom: 100, left: 80 };
+    const width = 500 - margin.left - margin.right;
+    const height = 500 - margin.top - margin.bottom;
+
+    const svg = chartElement
+      .append('svg')
+      .attr('width', width + margin.left + margin.right)
+      .attr('height', height + margin.top + margin.bottom)
+      .style('overflow', 'visible');
+
+    const chartGroup = svg
+      .append('g')
+      .attr('transform', `translate(${margin.left}, ${margin.top})`);
+
+    const xScale = d3
+      .scaleBand()
+      .domain(data.map((d) => d.feature))
+      .range([0, width])
+      .padding(0.2);
+
+    const xAxis = d3.axisBottom(xScale)
+      .tickFormat(d => d); // 필요에 따라 포맷 조정 가능
+
+    chartGroup
+      .append('g')
+      .attr('transform', `translate(0, ${height})`)
+      .call(xAxis)
+      .selectAll('text')
+      .attr('transform', 'rotate(-45)')
+      .style('text-anchor', 'end')
+      .style('fill', '#ffffff'); // 축 레이블 색상 변경
+
+    const yScale = d3
+      .scaleLinear()
+      .domain([0, d3.max(data, (d) => d.importance) * 1.1])
+      .range([height, 0]);
+
+    const yAxis = d3.axisLeft(yScale)
+      .ticks(5)
+      .tickFormat(d3.format(".2f")); // 소수점 2자리까지 표시
+
+    chartGroup.append('g')
+      .call(yAxis)
+      .selectAll('text')
+      .style('fill', '#ffffff'); // 축 레이블 색상 변경
+
+    // 막대 추가
+    chartGroup
+      .selectAll('.feature-bar')
+      .data(data)
+      .enter()
+      .append('rect')
+      .attr('class', 'feature-bar')
+      .attr('x', (d) => xScale(d.feature))
+      .attr('y', (d) => yScale(d.importance))
+      .attr('width', xScale.bandwidth())
+      .attr('height', (d) => height - yScale(d.importance))
+      .attr('fill', '#ff7f0e'); // Feature Importance 막대 색상 변경
+
+    // Y축 레이블
+    chartGroup
+      .append('text')
+      .attr('text-anchor', 'middle')
+      .attr('transform', `translate(${-60}, ${height / 2}) rotate(-90)`)
+      .attr('fill', '#ffffff')
+      .text('Feature Importance');
+
+    // X축 레이블
+    chartGroup
+      .append('text')
+      .attr('text-anchor', 'middle')
+      .attr('transform', `translate(${width / 2}, ${height + 80})`)
+      .attr('fill', '#ffffff')
+      .text('Feature');
+  }
+
+  // 선택한 격자 데이터 차트를 클리어하는 함수
+  function clearSelectedChart() {
+    const chartElement = d3.select(selectedChartRef.current);
+    chartElement.selectAll('*').remove(); 
   }
 
   return (
@@ -298,13 +418,19 @@ const Dataset = () => {
       <h1>GeoJSON Grid Map</h1>
       <div className="map-container">
         <svg ref={svgRef}></svg>
-        <div className="info-box">
-          <h2>선택한 격자 데이터</h2>
-          {gridData ? (
-            <div ref={chartRef}></div>
-          ) : (
-            <p>격자를 선택하면 데이터가 표시됩니다.</p>
-          )}
+        <div className="info-container">
+          <div className="info-box">
+            <h2>선택한 격자 데이터</h2>
+            {gridData ? (
+              <div className="bar-chart" ref={selectedChartRef}></div>
+            ) : (
+              <p>격자를 선택하면 데이터가 표시됩니다.</p>
+            )}
+          </div>
+          <div className="info-box">
+            <h2>Feature Importance</h2>
+            <div className="feature-bar-chart" ref={featureChartRef}></div>
+          </div>
         </div>
       </div>
     </main>

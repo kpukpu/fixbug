@@ -5,7 +5,7 @@
   flex-direction: column;
   justify-content: flex-start;
   align-items: center;
-  height: 100vh;
+  min-height: 100vh; /* height을 min-height로 변경하여 내용에 따라 확장 가능하게 함 */
   background-color: #555;
   background-image: url('dongguk_logo.png');
   background-repeat: no-repeat;
@@ -46,16 +46,28 @@ path:hover {
 
 .info-box {
   width: 50%;
-  height: auto;
+  min-width: 500px; /* 최소 너비 설정 */
   background-color: rgb(19, 18, 18);
   border: 1px solid #ccc;
   padding: 20px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
   overflow-y: auto;
+  color: #ffffff; /* 텍스트 색상을 흰색으로 설정 */
+}
+
+.info-box h2 {
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.info-box p {
+  text-align: center;
+  color: #dddddd;
 }
 
 /* 그래프 내부 텍스트 스타일 */
-.info-box text {
+.bar-chart text,
+.feature-bar-chart text {
   fill: #ffffff;
   font-size: 12px;
 }
@@ -63,14 +75,60 @@ path:hover {
 /* 막대 스타일 */
 .bar {
   fill: #69b3a2;
+  transition: fill 0.3s;
+}
+
+.bar:hover {
+  fill: #40a389;
+}
+
+.feature-bar-chart .feature-bar {
+  fill: #ff7f0e;
+  transition: fill 0.3s;
+}
+
+.feature-bar-chart .feature-bar:hover {
+  fill: #e67e22;
 }
 
 /* 축 레이블 스타일 */
 .axis text {
   fill: #ffffff;
+  font-size: 10px;
 }
 
 .axis path,
 .axis line {
   stroke: #ffffff;
+}
+
+.bar-chart .tick line,
+.feature-bar-chart .tick line {
+  stroke: #444444;
+}
+
+.bar-chart .tick text,
+.feature-bar-chart .tick text {
+  font-size: 10px;
+}
+
+/* 추가: 차트 제목 스타일 */
+.bar-chart .axis-label,
+.feature-bar-chart .axis-label {
+  fill: #ffffff;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 1200px) {
+  .map-container {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .info-box {
+    width: 80%;
+    margin-top: 20px;
+  }
 }
