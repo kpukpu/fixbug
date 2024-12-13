@@ -103,7 +103,7 @@ const Dataset = () => {
             const vals = valueMap[key] || { actual:0, predict:0 };
             return getColor(vals.actual, vals.predict);
           })
-          .style('opacity', 0.5) // 투명도 적용
+          .style('opacity', 0.7) // 초기 투명도를 0.7로 설정
           .on('mouseover', function() {
             d3.select(this).attr('fill', '#ffcc00').style('opacity',1);
           })
@@ -114,7 +114,7 @@ const Dataset = () => {
             const vals = valueMap[key] || {actual:0, predict:0};
             d3.select(this)
               .attr('fill', getColor(vals.actual, vals.predict))
-              .style('opacity', 0.5); // 마우스 아웃 시 다시 투명도 적용
+              .style('opacity', 0.7); // 마우스 아웃 시 투명도 0.7 적용
           })
           .on('click', function (event, d) {
             if (!d.geometry || !d.geometry.coordinates) return;
