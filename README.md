@@ -1,2 +1,2 @@
 # fixbug
-ssook ssook
+ssook
