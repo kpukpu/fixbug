@@ -5,6 +5,7 @@ import Footer from "./components/Footer"; // 정확히 대소문자 구별
 import MainContent from "./components/MainContent";
 import AboutUs from "./components/aboutus";
 import Dataset from "./components/dataset";
+import Ourproject from "./components/ourproject";
 import "./App.css";
 
 function App() {
@@ -16,6 +17,7 @@ function App() {
                     <Route path="/" element={<MainContent />} />
                     <Route path="/about-us" element={<AboutUs />} />
                     <Route path="/data-set" element={<Dataset />} />
+                    <Route path="/our-project" element={<Ourproject />} />
                 </Routes>
                 <Footer />
             </div>
