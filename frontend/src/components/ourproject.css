@@ -1,15 +1,23 @@
-/* 기본 리셋 및 폰트 설정 */
-body {
-  margin: 0;
-  padding: 0;
-  font-family: sans-serif;
-  background-color: #222;
-  color: #ddd;
+/* ourproject.css */
+
+.main-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+  min-height: 100vh; /* 내용에 따라 확장 가능 */
+  background-color: #555;
+  background-image: url('dongguk_logo.png');
+  background-repeat: no-repeat;
+  background-size: 40%;
+  background-position: center;
+  padding-top: 90px;
 }
 
-/* 메인 컨테이너 중앙 정렬 */
-.main-container {
-  text-align: center;
+h1 {
+  font-size: 60px;
+  margin-bottom: 20px;
+  color: #ffffff;
 }
 
 /* 지도 컨테이너 스타일 */
@@ -21,13 +29,28 @@ body {
   position: relative;
 }
 
+/* SVG 기본 스타일 */
+svg {
+  border: 1px solid #ccc;
+  margin-top: 20px;
+}
+
 /* 행정동 다각형 스타일 */
 .adm-dong {
-  transition: fill 0.3s, opacity 0.3s;
   cursor: pointer;
+  transition: fill 0.2s, opacity 0.2s;
 }
 
 /* 마우스 오버 시 강조 효과 */
 .adm-dong:hover {
+  fill: #ffcc00;
   stroke-width: 2;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 1200px) {
+  #map {
+    width: 90%;
+    height: auto;
+  }
 }
