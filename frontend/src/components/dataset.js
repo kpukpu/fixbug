@@ -264,7 +264,7 @@ const Dataset = () => {
   function renderSelectedChart(data) {
     const chartElement = d3.select(selectedChartRef.current);
     chartElement.selectAll('*').remove();
-
+  
     const ageData = [
       { ageGroup: '유아', value: data.realkid || 0 },
       { ageGroup: '초등학생', value: data.element || 0 },
@@ -277,184 +277,145 @@ const Dataset = () => {
       { ageGroup: '60대', value: data.sixty || 0 },
       { ageGroup: '70대 이상', value: data.seventy || 0 },
     ];
-
-    const margin = { top: 20, right: 20, bottom: 50, left: 60 };
-    const width = 500 - margin.left - margin.right;
-    const height = 350 - margin.top - margin.bottom;
-
+  
+    /* ▶ info‑box 실제 폭을 가져와서 width 계산 */
+    const fullW = chartElement.node().clientWidth || 420;
+    const margin = { top: 20, right: 20, bottom: 60, left: 60 };
+    const width  = fullW - margin.left - margin.right;
+    const height = 260  - margin.top  - margin.bottom;
+  
     const svg = chartElement
       .append('svg')
-      .attr('width', width + margin.left + margin.right)
-      .attr('height', height + margin.top + margin.bottom)
-      .style('overflow', 'visible');
-
+      .attr('width', fullW)
+      .attr('height', height + margin.top + margin.bottom);
+  
     const chartGroup = svg
       .append('g')
-      .attr('transform', `translate(${margin.left}, ${margin.top})`);
-
+      .attr('transform', `translate(${margin.left},${margin.top})`);
+  
     const xScale = d3
       .scaleBand()
-      .domain(ageData.map((d) => d.ageGroup))
+      .domain(ageData.map(d => d.ageGroup))
       .range([0, width])
-      .padding(0.2);
-
-    const xAxis = d3.axisBottom(xScale);
-
-    chartGroup
-      .append('g')
-      .attr('transform', `translate(0, ${height})`)
-      .call(xAxis)
+      .padding(0.25);
+  
+    chartGroup.append('g')
+      .attr('transform', `translate(0,${height})`)
+      .call(d3.axisBottom(xScale))
       .selectAll('text')
-      .attr('transform', 'rotate(-45)')
+      .attr('transform', 'rotate(-40)')
       .style('text-anchor', 'end');
-
+  
     const yScale = d3
       .scaleLinear()
-      .domain([0, d3.max(ageData, (d) => d.value) * 1.1])
+      .domain([0, d3.max(ageData, d => d.value) * 1.1 || 1])
       .range([height, 0]);
-
-    const yAxis = d3.axisLeft(yScale);
-
-    chartGroup.append('g').call(yAxis);
-
-    chartGroup
-      .selectAll('.bar')
+  
+    chartGroup.append('g').call(d3.axisLeft(yScale).ticks(4));
+  
+    chartGroup.selectAll('rect')
       .data(ageData)
-      .enter()
-      .append('rect')
-      .attr('class', 'bar')
-      .attr('x', (d) => xScale(d.ageGroup))
-      .attr('y', (d) => yScale(d.value))
+      .enter().append('rect')
+      .attr('x', d => xScale(d.ageGroup))
+      .attr('y', d => yScale(d.value))
       .attr('width', xScale.bandwidth())
-      .attr('height', (d) => height - yScale(d.value))
+      .attr('height', d => height - yScale(d.value))
       .attr('fill', '#69b3a2');
-
-    // Y축 레이블
-    chartGroup
-      .append('text')
-      .attr('text-anchor', 'middle')
-      .attr('transform', `translate(${-60}, ${height / 2}) rotate(-90)`)
-      .attr('fill', '#ffffff')
-      .text('인구 수');
-
-    // X축 레이블
-    chartGroup
-      .append('text')
-      .attr('text-anchor', 'middle')
-      .attr('transform', `translate(${width / 2}, ${height + 40})`)
-      .attr('fill', '#ffffff')
-      .text('연령대');
   }
-
   function renderFeatureImportanceChart() {
     const chartElement = d3.select(featureChartRef.current);
     chartElement.selectAll('*').remove();
-
-    const data = featureImportanceData;
-
-    const margin = { top: 20, right: 20, bottom: 100, left: 80 };
-    const width = 500 - margin.left - margin.right;
-    const height = 500 - margin.top - margin.bottom;
-
+  
+    const fullW = chartElement.node().clientWidth || 420;
+    const margin = { top: 20, right: 20, bottom: 100, left: 70 };
+    const width  = fullW - margin.left - margin.right;
+    const height = 320  - margin.top - margin.bottom;
+  
     const svg = chartElement
       .append('svg')
-      .attr('width', width + margin.left + margin.right)
-      .attr('height', height + margin.top + margin.bottom)
-      .style('overflow', 'visible');
-
-    const chartGroup = svg
-      .append('g')
-      .attr('transform', `translate(${margin.left}, ${margin.top})`);
-
-    const xScale = d3
+      .attr('width', fullW)
+      .attr('height', height + margin.top + margin.bottom);
+  
+    const g = svg.append('g')
+      .attr('transform', `translate(${margin.left},${margin.top})`);
+  
+    const x = d3
       .scaleBand()
-      .domain(data.map((d) => d.feature))
+      .domain(featureImportanceData.map(d => d.feature))
       .range([0, width])
-      .padding(0.2);
-
-    const xAxis = d3.axisBottom(xScale)
-      .tickFormat(d => d);
-
-    chartGroup
-      .append('g')
-      .attr('transform', `translate(0, ${height})`)
-      .call(xAxis)
+      .padding(0.25);
+  
+    g.append('g')
+      .attr('transform', `translate(0,${height})`)
+      .call(d3.axisBottom(x))
       .selectAll('text')
       .attr('transform', 'rotate(-45)')
       .style('text-anchor', 'end')
       .style('fill', '#ffffff');
-
-    const yScale = d3
+  
+    const y = d3
       .scaleLinear()
-      .domain([0, d3.max(data, (d) => d.importance) * 1.1])
+      .domain([0, d3.max(featureImportanceData, d => d.importance) * 1.1])
       .range([height, 0]);
-
-    const yAxis = d3.axisLeft(yScale)
-      .ticks(5)
-      .tickFormat(d3.format(".2f"));
-
-    chartGroup.append('g')
-      .call(yAxis)
+  
+    g.append('g')
+      .call(d3.axisLeft(y).ticks(5).tickFormat(d3.format('.2f')))
       .selectAll('text')
       .style('fill', '#ffffff');
-
-    chartGroup
-      .selectAll('.feature-bar')
-      .data(data)
-      .enter()
-      .append('rect')
-      .attr('class', 'feature-bar')
-      .attr('x', (d) => xScale(d.feature))
-      .attr('y', (d) => yScale(d.importance))
-      .attr('width', xScale.bandwidth())
-      .attr('height', (d) => height - yScale(d.importance))
+  
+    g.selectAll('rect')
+      .data(featureImportanceData)
+      .enter().append('rect')
+      .attr('x', d => x(d.feature))
+      .attr('y', d => y(d.importance))
+      .attr('width', x.bandwidth())
+      .attr('height', d => height - y(d.importance))
       .attr('fill', '#ff7f0e');
+      /* 예시: renderFeatureImportanceChart() 내 x축·y축 만든 직후 */
 
-    // Y축 레이블
-    chartGroup
-      .append('text')
-      .attr('text-anchor', 'middle')
-      .attr('transform', `translate(${-60}, ${height / 2}) rotate(-90)`)
-      .attr('fill', '#ffffff')
-      .text('Feature Importance');
+    g.selectAll('.domain, .tick line').attr('stroke-width', 0.6);  // ← 추가
+    g.selectAll('text').style('font-weight', 400).style('font-size', '12px');
 
-    // X축 레이블
-    chartGroup
-      .append('text')
-      .attr('text-anchor', 'middle')
-      .attr('transform', `translate(${width / 2}, ${height + 80})`)
-      .attr('fill', '#ffffff')
-      .text('Feature');
   }
-
+  
   function clearSelectedChart() {
     const chartElement = d3.select(selectedChartRef.current);
     chartElement.selectAll('*').remove();
   }
+/* ---------- JSX ---------- */
+return (
+  <main className="main-content">
+    <h1>GeoJSON Grid Map</h1>
 
-  return (
-    <main className="main-content">
-      <h1>GeoJSON Grid Map</h1>
-      <div className="map-container" style={{ position: 'relative' }}>
-        <div id="map" style={{ width: '800px', height: '600px' }}></div>
+    {/* ▼ 지도·패널을 가로로 배치하는 flex 래퍼 */}
+    <div className="content-flex">
+
+      {/* 지도 */}
+      <div className="map-wrapper" style={{ position: 'relative' }}>
+        <div id="map" style={{ width: 800, height: 600 }}></div>
         <svg ref={svgRef} style={{ position: 'absolute', top: 0, left: 0 }}></svg>
-        <div className="info-container" style={{ position: 'relative', zIndex: 999 }}>
-          <div className="info-box">
-            <h2>선택한 격자 데이터</h2>
-            {gridData ? (
-              <div className="bar-chart" ref={selectedChartRef}></div>
-            ) : (
-              <p>격자를 선택하면 데이터가 표시됩니다.</p>
-            )}
-          </div>
-          <div className="info-box">
-            <h2>Feature Importance</h2>
-            <div className="feature-bar-chart" ref={featureChartRef}></div>
-          </div>
+      </div>
+
+      {/* 우측 그래프 패널 */}
+      <div className="info-container" style={{ position: 'relative', zIndex: 999 }}>
+        <div className="info-box">
+          <h2>선택한 격자 데이터</h2>
+          {gridData ? (
+            <div className="bar-chart" ref={selectedChartRef}></div>
+          ) : (
+            <p>격자를 선택하면 데이터가 표시됩니다.</p>
+          )}
+        </div>
+
+        <div className="info-box">
+          <h2>Feature Importance</h2>
+          <div className="feature-bar-chart" ref={featureChartRef}></div>
         </div>
       </div>
-    </main>
-  );
-};
 
+    </div>
+  </main>
+);
+};
 export default Dataset;
+

@@ -34,6 +34,16 @@ svg {
   border: 1px solid #ccc;
   margin-top: 20px;
 }
+.content-flex {
+  display: flex;
+  gap: 1.5rem;
+  align-items: flex-start;
+  flex-wrap: wrap;           /* 창이 좁아지면 아래로 떨어지도록 */
+}
+
+.chart-wrapper {
+  width: 320px;
+}
 
 /* 행정동 다각형 스타일 */
 .adm-dong {
