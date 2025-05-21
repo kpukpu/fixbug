@@ -30,7 +30,7 @@ const AboutUs = () => {
             <div className="content-container">
                 <div className="text-container">
                     <h1>팀원 소개</h1>
-                    <h1>팀장 이수욱</h1>
+                    <h1>팀장 이수욱</h1>    
                     <h2>
                     - 동국대학교 19학번<br/>- 2020 창의적 공학 설계 지름 ROAD 어플리케이션 구상 및 설계 <br/>- 2023 캡스톤 디자인 CHAT GPU 비즈니스 모델 설계 <br/>- 2024 캡스톤 디자인 케릭 캐쳐 비즈니스 모델 설계 <br/>- 2024 캡스톤 디자인 AI 활용, 서울 중구 홍보 컨텐츠 팀장 담당 <br/>- 2024 공개 SW 프로젝트 ICU 알고리즘 설계 <br/>- FIXBUG 팀장 및 Machine Learning 개발<br/>- 육군 특수전사령부 특수전학교 전술 조교 <br/>- SQLD <br/>- 정보처리기능사<br/>- 워드프로세서
                     </h2>

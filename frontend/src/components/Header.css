@@ -1,40 +1,87 @@
 .header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px 20px;
-    background-color: black;
-    color: white;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 20px;
+  background-color: black;
+  color: white;
 }
 
-.logo {
-    font-size: 24px;
-    font-weight: bold;
-}
-
+/* nav 항목들을 한 줄에 배치 */
 .nav-list {
-    list-style: none;
-    display: flex;
-    margin: 0;
-    padding: 0;
+  list-style: none;
+  display: flex;
+  margin: 0;
+  padding: 0;
 }
 
+/* 개별 메뉴 간 여백 */
 .nav-list li {
-    margin: 0 15px;
+  margin: 0 15px;
 }
 
+/* 메뉴 링크 스타일 */
 .nav-list li a {
-    text-decoration: none;
-    color: white;
-    font-weight: bold;
+  text-decoration: none;
+  color: white;
+  font-weight: bold;
 }
 
-.login-button {
-    padding: 5px 15px;
-    border: 2px solid white;
-    background: none;
-    color: white;
-    font-size: 16px;
-    border-radius: 5px;
-    cursor: pointer;
+/* flex spacer – 자동으로 남는 공간 차지 */
+.nav-list .spacer {
+  flex: 1;
+}
+
+/* 문의하기 버튼 – 기존 스타일 재사용 */
+.contact-button {
+  padding: 5px 15px;
+  border: 2px solid white;
+  background: none;
+  color: white;
+  font-size: 16px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+
+/* (기존 헤더·네비·버튼 스타일은 그대로) */
+
+/* -------- 모달 -------- */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;                 /* top/right/bottom/left: 0 */
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 999;             /* 헤더 위로 */
+}
+
+.modal {
+  background: #fff;
+  padding: 25px 40px;
+  border-radius: 8px;
+  text-align: center;
+  min-width: 280px;
+  color: #000;
+}
+
+.modal h2 {
+  margin-top: 0;
+  font-size: 20px;
+}
+
+.email {
+  font-weight: bold;
+  margin: 12px 0 24px;
+}
+
+.close-btn {
+  padding: 6px 20px;
+  font-size: 15px;
+  background: #222;
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
 }

@@ -1,66 +1,87 @@
-/* ourproject.css */
+/* ─────────────── ourproject.css ─────────────── */
 
-.main-container {
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
-  align-items: center;
-  min-height: 100vh; /* 내용에 따라 확장 가능 */
-  background-color: #555;
-  background-image: url('dongguk_logo.png');
-  background-repeat: no-repeat;
-  background-size: 40%;
-  background-position: center;
-  padding-top: 90px;
+/* ===== 레이아웃 ===== */
+.main-container{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  min-height:100vh;
+  padding-top:90px;
+
+  background:#555 url('dongguk_logo.png') no-repeat center/40%;
 }
 
-h1 {
-  font-size: 60px;
-  margin-bottom: 20px;
-  color: #ffffff;
+h1{
+  font-size:60px;
+  margin-bottom:20px;
+  color:#fff;
 }
 
-/* 지도 컨테이너 스타일 */
-#map {
-  width: 800px;
-  height: 600px;
-  margin: 20px auto;
-  border: 2px solid #444;
-  position: relative;
+.content-flex{
+  display:flex;
+  gap:1.5rem;
+  align-items:flex-start;
+  flex-wrap:wrap;        /* 창이 좁아지면 줄바꿈 */
 }
 
-/* SVG 기본 스타일 */
-svg {
-  border: 1px solid #ccc;
-  margin-top: 20px;
-}
-.content-flex {
-  display: flex;
-  gap: 1.5rem;
-  align-items: flex-start;
-  flex-wrap: wrap;           /* 창이 좁아지면 아래로 떨어지도록 */
+@media(max-width:1200px){
+  #map{width:90%;height:auto;}
 }
 
-.chart-wrapper {
-  width: 320px;
+/* ===== 지도 ===== */
+#map{
+  width:800px;
+  height:600px;
+  margin:20px auto;
+  border:2px solid #444;
+  position:relative;
 }
 
-/* 행정동 다각형 스타일 */
-.adm-dong {
-  cursor: pointer;
-  transition: fill 0.2s, opacity 0.2s;
+/* Leaflet overlay SVG는 투명(범례 안 가리도록) */
+#map svg{
+  background:transparent;
+  border:none;
 }
 
-/* 마우스 오버 시 강조 효과 */
-.adm-dong:hover {
-  fill: #ffcc00;
-  stroke-width: 2;
+/* ===== 차트 ===== */
+.chart-wrapper{width:320px;}
+
+/* ===== 행정동 폴리곤 ===== */
+.adm-dong{
+  cursor:pointer;
+  transition:fill .2s,opacity .2s;
+}
+.adm-dong:hover{
+  fill:#ffcc00;
+  stroke-width:2;
 }
 
-/* 반응형 디자인 */
-@media (max-width: 1200px) {
-  #map {
-    width: 90%;
-    height: auto;
-  }
+/* ===== (선택) 일반 SVG 스타일 – 지도 밖 차트 전용 ===== */
+.chart-wrapper svg{
+  border:1px solid #ccc;
+  margin-top:20px;
 }
+
+/* ===== 범례 ===== */
+.legend{
+  background:rgba(255,255,255,.9);
+  padding:8px 10px;
+  line-height:20px;
+  font-size:14px;
+  border-radius:6px;
+  color:#000;
+  box-shadow:0 0 4px rgba(0,0,0,.3);
+  position:relative;   /* control 래퍼 overflow 대비 */
+  z-index:1100;        /* overlayPane(400) 위로 */
+}
+.legend span{
+  display:inline-block;
+  width:18px;
+  height:18px;
+  margin-right:6px;
+  vertical-align:middle;
+  border:1px solid #888;
+}
+.legend .tp{background:#00FF00;}
+.legend .fn{background:#9b111e;}
+.legend .fp{background:#0000FF;}
