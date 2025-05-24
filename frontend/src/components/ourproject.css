@@ -4,65 +4,91 @@
 .main-container{
   display:flex;
   flex-direction:column;
-  align-items:center;
+  align-items:stretch;            /* 배너·콘텐츠 모두 좌우 100 % */
+
+  padding-top:0;                  /* 헤더 여백 제거 */
   min-height:100vh;
-  padding-top:90px;
 
   background:#555 url('dongguk_logo.png') no-repeat center/40%;
 }
 
+/* ===== 공통 타이틀 ===== */
 h1{
   font-size:60px;
-  margin-bottom:20px;
+  margin:20px 0;
   color:#fff;
+  text-align:center;
 }
 
+/* ===== 상단 설명 배너 ===== */
+.intro-banner{
+  display:block;
+  width:100%;
+  max-height:200px;
+  object-fit:cover;
+  margin:0;                       /* 네비게이션에 딱 붙도록 */
+}
+
+/* ===== 메인 콘텐츠 묶음 (지도 + 차트) ===== */
 .content-flex{
   display:flex;
-  gap:1.5rem;
+  flex-wrap:wrap;
+  justify-content:center;         /* 가로축 중앙 정렬 */
   align-items:flex-start;
-  flex-wrap:wrap;        /* 창이 좁아지면 줄바꿈 */
-}
-
-@media(max-width:1200px){
-  #map{width:90%;height:auto;}
+  gap:1.5rem;
+  text-align:center;              /* 줄바꿈 시 가운데 */
 }
 
 /* ===== 지도 ===== */
 #map{
   width:800px;
   height:600px;
-  margin:20px auto;
   border:2px solid #444;
   position:relative;
 }
 
-/* Leaflet overlay SVG는 투명(범례 안 가리도록) */
+/* 지도 감싸는 래퍼 → 중앙에서 시작 */
+.map-wrapper{
+  display:flex;
+  justify-content:center;
+  flex:0 0 800px;
+  margin:0 1rem;
+}
+
+/* SVG overlay는 투명 (범례 가리지 않게) */
 #map svg{
   background:transparent;
   border:none;
 }
 
 /* ===== 차트 ===== */
-.chart-wrapper{width:320px;}
-
-/* ===== 행정동 폴리곤 ===== */
-.adm-dong{
-  cursor:pointer;
-  transition:fill .2s,opacity .2s;
-}
-.adm-dong:hover{
-  fill:#ffcc00;
-  stroke-width:2;
+.chart-wrapper{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  flex:0 0 320px;
+  margin:0 1rem;
 }
 
-/* ===== (선택) 일반 SVG 스타일 – 지도 밖 차트 전용 ===== */
 .chart-wrapper svg{
   border:1px solid #ccc;
   margin-top:20px;
 }
 
-/* ===== 범례 ===== */
+/* ===== 반응형 조정 ===== */
+@media (max-width:1200px){
+  .map-wrapper,
+  .chart-wrapper{
+    flex:1 1 90%;                /* 모바일·태블릿에서 가변폭 */
+  }
+  #map{width:90%;height:auto;}
+}
+
+/* ===== 행정동 폴리곤 ===== */
+.adm-dong{cursor:pointer;transition:fill .2s,opacity .2s;}
+.adm-dong:hover{fill:#ffcc00;stroke-width:2;}
+
+/* ===== Leaflet 범례 ===== */
 .legend{
   background:rgba(255,255,255,.9);
   padding:8px 10px;
@@ -71,8 +97,7 @@ h1{
   border-radius:6px;
   color:#000;
   box-shadow:0 0 4px rgba(0,0,0,.3);
-  position:relative;   /* control 래퍼 overflow 대비 */
-  z-index:1100;        /* overlayPane(400) 위로 */
+  z-index:1100;
 }
 .legend span{
   display:inline-block;

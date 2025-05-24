@@ -1,8 +1,11 @@
 import React, { useEffect, useRef } from 'react';
-import L from 'leaflet';
+import L   from 'leaflet';
 import * as d3 from 'd3';
 import 'leaflet/dist/leaflet.css';
 import './ourproject.css';
+
+/* 상단 설명 배너 */
+import introBanner from '../assets/ourproject_intro.png';   // 이미지 경로 확인!
 
 export default function OurProject() {
   const svgRef   = useRef(null);
@@ -14,6 +17,7 @@ export default function OurProject() {
   const CHART_W = 570;
   const CHART_H = 380;
 
+  /* ───────────────────────── Leaflet + D3 초기화 ───────────────────────── */
   useEffect(() => {
     const map = L.map('map', {
       center: [36.348, 127.376],
@@ -42,10 +46,11 @@ export default function OurProject() {
     if (!svgRef.current)
       svgRef.current = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     map.getPanes().overlayPane.appendChild(svgRef.current);
-    const svg = d3
-      .select(svgRef.current)
-      .style('position', 'absolute')
-      .style('pointer-events', 'none');
+
+    const svg     = d3.select(svgRef.current).style('position', 'absolute').style('pointer-events', 'none');
+    const g       = svg.append('g');
+    const dongLay = g.append('g');
+    const gridLay = g.append('g').style('display', 'none');
 
     /* ─── 데이터 로드 ─── */
     Promise.all([
@@ -53,7 +58,8 @@ export default function OurProject() {
       d3.json(`${process.env.PUBLIC_URL}/data/map.geojson`),
       d3.csv(`${process.env.PUBLIC_URL}/data/ssookssook.csv`),
     ]).then(([dongGeo, gridGeo, csv]) => {
-      const snap   = ([lng, lat]) => [Math.floor(lng / GRID) * GRID, Math.floor(lat / GRID) * GRID];
+      /* 좌표 보조 함수 */
+      const snap = ([lng, lat]) => [Math.floor(lng / GRID) * GRID, Math.floor(lat / GRID) * GRID];
       const origin = f => {
         const { type, coordinates: C } = f.geometry || {};
         if (type === 'Point')        return C;
@@ -61,24 +67,22 @@ export default function OurProject() {
         if (type === 'MultiPolygon') return C[0][0][0];
         return [null, null];
       };
-      const rev   = ([lng, lat]) => [lat, lng];
-      const color = (a, p) => {
+      const rev    = ([lng, lat]) => [lat, lng];
+      const colorF = (a, p) => {
         if (a === 1 && p === 1) return '#00FF00'; // TP
         if (a === 1 && p === 0) return '#9b111e'; // FN
         if (a === 0 && p === 1) return '#0000FF'; // FP
         return '#ffffff';
       };
 
+      /* CSV → { 'lng,lat': {a, p} } */
       const val = {};
       csv.forEach(r => {
         const key = snap([+r.경도, +r.위도]).join(',');
         val[key]  = { a: +r.실제값 || 0, p: +r.예측값 || 0 };
       });
 
-      const g         = svg.append('g');
-      const dongLayer = g.append('g');
-      const gridLayer = g.append('g').style('display', 'none');
-
+      /* geoPath 설정 (Leaflet 좌표계를 D3로) */
       const geoPath = d3.geoPath().projection(
         d3.geoTransform({
           point(x, y) {
@@ -89,8 +93,8 @@ export default function OurProject() {
         }),
       );
 
-      dongLayer
-        .selectAll('path')
+      /* ─── 행정동 그리기 ─── */
+      dongLay.selectAll('path')
         .data(dongGeo.features)
         .enter()
         .append('path')
@@ -104,19 +108,17 @@ export default function OurProject() {
           const [lng, lat] = d3.geoCentroid(dongF);
           map.setView([lat, lng], Z_GRID);
 
+          /* 선택 행정동 숨기기 */
           d3.select(this).style('display', 'none');
 
-          gridLayer.selectAll('*').remove();
-          gridLayer.style('display', 'block');
+          /* 격자 레이어 생성 */
+          gridLay.selectAll('*').remove();
+          gridLay.style('display', 'block');
 
-          const inside = gridGeo.features.filter(f =>
-            d3.geoContains(dongF, d3.geoCentroid(f))
-          );
-
+          const inside = gridGeo.features.filter(f => d3.geoContains(dongF, d3.geoCentroid(f)));
           let tp = 0, fn = 0, fp = 0;
 
-          gridLayer
-            .selectAll('rect')
+          gridLay.selectAll('rect')
             .data(inside)
             .enter()
             .append('rect')
@@ -125,7 +127,7 @@ export default function OurProject() {
             .attr('fill', f => {
               const k = snap(origin(f)).join(',');
               const v = val[k] || { a: 0, p: 0 };
-              const c = color(v.a, v.p);
+              const c = colorF(v.a, v.p);
               if (c === '#00FF00') tp += 1;
               else if (c === '#9b111e') fn += 1;
               else if (c === '#0000FF') fp += 1;
@@ -133,25 +135,26 @@ export default function OurProject() {
             })
             .style('opacity', 0.7);
 
-          update();
+          update();               // 위치 업데이트
           drawChart({ tp, fn, fp });
         });
 
+      /* ─── 지도·줌 이동 시 위치 보정 ─── */
       function update() {
         const b  = map.getBounds();
         const tl = map.latLngToLayerPoint(b.getNorthWest());
         const br = map.latLngToLayerPoint(b.getSouthEast());
 
-        svg
-          .attr('width',  br.x - tl.x)
-          .attr('height', br.y - tl.y)
-          .style('left', `${tl.x}px`)
-          .style('top',  `${tl.y}px`);
+        svg.attr('width', br.x - tl.x)
+           .attr('height', br.y - tl.y)
+           .style('left', `${tl.x}px`)
+           .style('top',  `${tl.y}px`);
 
         g.attr('transform', `translate(${-tl.x}, ${-tl.y})`);
-        dongLayer.selectAll('path').attr('d', geoPath);
+        dongLay.selectAll('path').attr('d', geoPath);
 
-        gridLayer.selectAll('rect')
+        /* 격자 사각형 위치 재계산 */
+        gridLay.selectAll('rect')
           .attr('x', f => map.latLngToLayerPoint(rev(origin(f))).x)
           .attr('y', f => map.latLngToLayerPoint(rev(origin(f))).y)
           .attr('width',  f => {
@@ -170,6 +173,7 @@ export default function OurProject() {
       map.on('moveend zoomend', update);
       update();
 
+      /* ─── 간단 막대 차트 ─── */
       function drawChart({ tp, fn, fp }) {
         const data = [
           { label: 'True Positive',  value: tp, color: '#00FF00' },
@@ -177,12 +181,12 @@ export default function OurProject() {
           { label: 'False Positive', value: fp, color: '#0000FF' },
         ];
 
-        const wrap = d3.select(chartRef.current);
+        const wrap   = d3.select(chartRef.current);
         wrap.selectAll('*').remove();
 
         const margin = { top: 20, right: 10, bottom: 50, left: 55 };
-        const W = CHART_W - margin.left - margin.right;
-        const H = CHART_H - margin.top  - margin.bottom;
+        const W      = CHART_W - margin.left - margin.right;
+        const H      = CHART_H - margin.top  - margin.bottom;
 
         const svgC = wrap.append('svg')
           .attr('width',  W + margin.left + margin.right)
@@ -191,15 +195,8 @@ export default function OurProject() {
         const g = svgC.append('g')
           .attr('transform', `translate(${margin.left},${margin.top})`);
 
-        const x = d3.scaleBand()
-          .domain(data.map(d => d.label))
-          .range([0, W])
-          .padding(0.35);
-
-        const y = d3.scaleLinear()
-          .domain([0, d3.max(data, d => d.value) || 1])
-          .nice()
-          .range([H, 0]);
+        const x = d3.scaleBand().domain(data.map(d => d.label)).range([0, W]).padding(0.35);
+        const y = d3.scaleLinear().domain([0, d3.max(data, d => d.value) || 1]).nice().range([H, 0]);
 
         g.append('g')
           .attr('transform', `translate(0,${H})`)
@@ -225,13 +222,19 @@ export default function OurProject() {
     return () => map.remove();
   }, []);
 
+  /* ──────── 렌더링 ──────── */
   return (
     <div className="main-container">
-      <h1>행정동&nbsp;→&nbsp;100 m 격자</h1>
+      {/* 설명 배너 */}
+      <img src={introBanner} alt="Intro Banner" className="intro-banner" />
+
+      <h1>행정동&nbsp;→&nbsp;100&nbsp;m&nbsp;격자</h1>
+
       <div className="content-flex">
         <div className="map-wrapper">
-          <div id="map" style={{ width: 800, height: 600 }}></div>
+          <div id="map"></div>
         </div>
+
         <div className="chart-wrapper">
           <h3>격자 예측 결과 개수</h3>
           <div ref={chartRef}></div>
