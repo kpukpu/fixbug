@@ -4,15 +4,13 @@
 .main-container{
   display:flex;
   flex-direction:column;
-  align-items:stretch;            /* 배너·콘텐츠 모두 좌우 100 % */
-
-  padding-top:0;                  /* 헤더 여백 제거 */
+  align-items:stretch;      /* 배너·콘텐츠 모두 좌우 100 % */
+  padding-top:0;
   min-height:100vh;
-
   background:#555 url('dongguk_logo.png') no-repeat center/40%;
 }
 
-/* ===== 공통 타이틀 ===== */
+/* 공통 타이틀 */
 h1{
   font-size:60px;
   margin:20px 0;
@@ -20,75 +18,92 @@ h1{
   text-align:center;
 }
 
-/* ===== 상단 설명 배너 ===== */
+/* 상단 설명 배너 */
 .intro-banner{
   display:block;
   width:100%;
   max-height:200px;
   object-fit:cover;
-  margin:0;                       /* 네비게이션에 딱 붙도록 */
+  margin:0;
 }
+
+/* ===== 월 선택 버튼 ===== */
+/* ===== 월 선택 버튼 ===== */
+.month-selector{
+  display:flex;
+  justify-content:center;
+  gap:0.5rem;
+  margin-bottom:10px;
+}
+.month-selector button{
+  padding:6px 14px;
+  font-size:16px;
+  border:1px solid #ccc;
+  background:#eee;
+  cursor:pointer;
+  border-radius:4px;
+  transition:background .2s;
+}
+.month-selector button:hover{background:#ddd;}
+.month-selector button.active{
+  background:#ffcc00;
+  font-weight:700;
+  border-color:#bfa100;
+}
+
 
 /* ===== 메인 콘텐츠 묶음 (지도 + 차트) ===== */
 .content-flex{
   display:flex;
   flex-wrap:wrap;
-  justify-content:center;         /* 가로축 중앙 정렬 */
+  justify-content:center;
   align-items:flex-start;
   gap:1.5rem;
-  text-align:center;              /* 줄바꿈 시 가운데 */
+  text-align:center;
 }
 
-/* ===== 지도 ===== */
+/* 지도 */
 #map{
   width:800px;
   height:600px;
   border:2px solid #444;
   position:relative;
 }
-
-/* 지도 감싸는 래퍼 → 중앙에서 시작 */
 .map-wrapper{
   display:flex;
   justify-content:center;
   flex:0 0 800px;
   margin:0 1rem;
 }
+#map svg{background:transparent;border:none;}
 
-/* SVG overlay는 투명 (범례 가리지 않게) */
-#map svg{
-  background:transparent;
-  border:none;
-}
-
-/* ===== 차트 ===== */
+/* 차트 */
 .chart-wrapper{
   display:flex;
   flex-direction:column;
   align-items:center;
-  flex:0 0 320px;
+  flex:0 0 340px;
   margin:0 1rem;
 }
-
 .chart-wrapper svg{
   border:1px solid #ccc;
   margin-top:20px;
 }
 
-/* ===== 반응형 조정 ===== */
+/* 반응형 */
 @media (max-width:1200px){
   .map-wrapper,
   .chart-wrapper{
-    flex:1 1 90%;                /* 모바일·태블릿에서 가변폭 */
+    flex:1 1 90%;
   }
   #map{width:90%;height:auto;}
 }
 
-/* ===== 행정동 폴리곤 ===== */
+/* 행정동 폴리곤 */
 .adm-dong{cursor:pointer;transition:fill .2s,opacity .2s;}
 .adm-dong:hover{fill:#ffcc00;stroke-width:2;}
 
-/* ===== Leaflet 범례 ===== */
+/* Leaflet 범례 */
 .legend{
   background:rgba(255,255,255,.9);
   padding:8px 10px;
@@ -110,3 +125,4 @@ h1{
 .legend .tp{background:#00FF00;}
 .legend .fn{background:#9b111e;}
 .legend .fp{background:#0000FF;}
+
