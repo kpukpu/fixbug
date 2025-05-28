@@ -1,76 +1,73 @@
 // src/components/OurProject.js
 import React, { useEffect, useRef, useState } from 'react';
-import L   from 'leaflet';
+import L from 'leaflet';
 import * as d3 from 'd3';
 import 'leaflet/dist/leaflet.css';
 import './ourproject.css';
 
 import introBanner from '../assets/ourproject_intro.png';
 
-/* ─────────────────────────────────────────────────────────── */
-
 export default function OurProject() {
-  /* === 상수 === */
-  const GRID    = 0.001;            // ≒ 100 m
-  const Z_DONG  = 13;               // 행정동 줌
-  const Z_GRID  = 15;               // 100 m 격자 줌
+  /* ===== 상수 ===== */
+  const GRID = 0.001;              // ≒ 100 m
+  const Z_DONG = 13;
+  const Z_GRID = 15;
   const CHART_W = 570;
   const CHART_H = 380;
   const MONTHS  = [6, 7, 8, 9, 10];
   const INITIAL_MONTH = 6;
 
-  /* === ref / state === */
-  const svgRef         = useRef(null);
-  const chartRef       = useRef(null);
-  const mapRef         = useRef(null);
-  const dongLayerRef   = useRef(null);
-  const gridLayerRef   = useRef(null);
-  const dongGeoRef     = useRef(null);
-  const gridGeoRef     = useRef(null);
-  const dongGridRef    = useRef([]);      // 행정동마다 포함 격자 index 배열
-  const valRef         = useRef({});      // { 'lng,lat': {a,p} }
-  const loadCsvRef     = useRef(null);
+  /* ===== ref / state ===== */
+  const svgRef       = useRef(null);
+  const chartRef     = useRef(null);
+  const mapRef       = useRef(null);
+  const dongLayerRef = useRef(null);
+  const gridLayerRef = useRef(null);
+  const dongGeoRef   = useRef(null);
+  const gridGeoRef   = useRef(null);
+  const dongGridRef  = useRef([]);      // 행정동 → 격자 index
+  const valRef       = useRef({});      // {lng,lat:{a,p}}
+  const loadCsvRef   = useRef(null);
 
   const [month, setMonth] = useState(INITIAL_MONTH);
 
-  /* === 보조 === */
-  const snap = ([x, y]) => [Math.floor(x / GRID) * GRID, Math.floor(y / GRID) * GRID];
+  /* ===== 보조 ===== */
+  const snap = ([x, y]) => [Math.floor(x / GRID) * GRID,
+                            Math.floor(y / GRID) * GRID];
+
   const origin = f => {
-    const g = f.geometry || {};
+    const g = f.geometry;
     if (g.type === 'Point')        return g.coordinates;
     if (g.type === 'Polygon')      return g.coordinates[0][0];
     if (g.type === 'MultiPolygon') return g.coordinates[0][0][0];
-    return [null, null];
+    return [0, 0];
   };
-  const rev      = ([x, y]) => [y, x];
-  const tpColor  = '#00FF00', fnColor = '#9b111e', fpColor = '#0000FF';
-  const colorF   = (a, p) => (a && p ? tpColor : a && !p ? fnColor : !a && p ? fpColor : '#ffffff');
-  const csvPath  = m => `${process.env.PUBLIC_URL}/data/ssookssook_${String(m).padStart(2, '0')}.csv`;
+  const rev = ([x, y]) => [y, x];
 
-  /* ─────────── Leaflet + D3 초기화 (한 번) ─────────── */
+  const tpColor = '#00FF00', fnColor = '#9b111e', fpColor = '#0000FF';
+  const csvPath = m => `${process.env.PUBLIC_URL}/data/ssookssook_${String(m).padStart(2, '0')}.csv`;
+  const colorF  = (a, p) => (a && p ? tpColor : a && !p ? fnColor : !a && p ? fpColor : '#ffffff');
+
+  /* ───────── 초기화 ───────── */
   useEffect(() => {
-    /* ① Leaflet 지도 */
+    /* ① 지도 */
     const map = L.map('map', {
       center: [36.348, 127.376],
       zoom  : Z_DONG,
-      layers: [
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          attribution: '© OpenStreetMap contributors',
-        }),
-      ],
+      layers: [L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+               { attribution: '© OpenStreetMap contributors' })],
     });
     mapRef.current = map;
 
     /* ② 범례 */
     const legend = L.control({ position: 'bottomright' });
     legend.onAdd = () => {
-      const div = L.DomUtil.create('div', 'legend');
-      div.innerHTML = `
-        <h4>예측 결과</h4>
+      const d = L.DomUtil.create('div', 'legend');
+      d.innerHTML = `<h4>예측 결과</h4>
         <p><span class="tp"></span> 예측 성공</p>
         <p><span class="fn"></span> 예측 실패</p>
         <p><span class="fp"></span> 예측했으나<br>&nbsp;&nbsp;&nbsp;실제 미발생&nbsp;</p>`;
-      return div;
+      return d;
     };
     legend.addTo(map);
 
@@ -78,11 +75,9 @@ export default function OurProject() {
     if (!svgRef.current)
       svgRef.current = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     map.getPanes().overlayPane.appendChild(svgRef.current);
+    const svg = d3.select(svgRef.current).style('position', 'absolute');
 
-    const svg = d3.select(svgRef.current)
-                  .style('position', 'absolute')
-
-    const g        = svg.append('g');
+    const g         = svg.append('g');
     const dongLayer = g.append('g');
     const gridLayer = g.append('g').style('display', 'none');
     dongLayerRef.current = dongLayer;
@@ -96,7 +91,7 @@ export default function OurProject() {
       dongGeoRef.current = dongGeo;
       gridGeoRef.current = gridGeo;
 
-      /* 행정동–격자 매핑 미리 계산 */
+      /* 행정동 ↔ 격자 index 미리 계산 */
       dongGridRef.current = dongGeo.features.map(() => []);
       gridGeo.features.forEach((gf, gi) => {
         const cen = d3.geoCentroid(gf);
@@ -105,42 +100,43 @@ export default function OurProject() {
         });
       });
 
-      drawDong();            // 행정동 경계 렌더
+      drawDong();
       loadCsv(INITIAL_MONTH);
     });
 
-    /* ⑤ 행정동 파스 렌더러 */
+    /* ── 행정동 경계 ── */
     function drawDong() {
       dongLayer.selectAll('path')
         .data(dongGeoRef.current.features)
         .enter()
         .append('path')
-        .attr('fill', '#b1b4e2')            // 기본색
-        .style('pointer-events', 'all')     // ★ 클릭 허용
+        .attr('data-di', (_d, i) => i)   // index 저장
+        .attr('fill', '#b1b4e2')
+        .style('pointer-events', 'all')
         .attr('stroke', '#000')
         .attr('stroke-width', 1)
-        .on('mouseover', function () {
-          d3.select(this).attr('fill', '#d3d3d3');
-        })
-        .on('mouseout', function () {
-          d3.select(this).attr('fill', d3.select(this).attr('data-prev'));
-        })
-        .on('click', function (_, f) { showGrid(f, this); });
+        .on('mouseover', function () { d3.select(this).attr('fill', '#d3d3d3'); })
+        .on('mouseout',  function () { d3.select(this).attr('fill', d3.select(this).attr('data-prev')); })
+        .on('click', function (_e, f) { showGrid(f, this); });
 
-      updatePositions();                    // 초기 위치 계산
+      updatePos();
     }
 
-    /* ⑥ 행정동 클릭 → 100 m 격자 표시 */
+    /* ── 행정동 클릭 → 100 m 격자 ── */
     function showGrid(dongF, elem) {
       const [lng, lat] = d3.geoCentroid(dongF);
       map.setView([lat, lng], Z_GRID);
 
-      d3.select(elem).style('display', 'none');       // 선택 동 잠시 숨김
-      gridLayer.selectAll('*').remove().style('display', 'block');
+      gridLayer.style('display', 'block').selectAll('*').remove(); // reset
 
-      const inside = gridGeoRef.current.features.filter(f =>
-        d3.geoContains(dongF, d3.geoCentroid(f)));
+      const dongIdx = +elem.getAttribute('data-di');
+      d3.select(elem).style('display', 'none'); // 선택된 행정동 숨김
 
+      const inside = dongGridRef.current[dongIdx].map(
+        idx => gridGeoRef.current.features[idx]
+      );
+
+      // ─ 격자 rect 추가 & 색상 계산 ─
       let tp = 0, fn = 0, fp = 0;
       gridLayer.selectAll('rect')
         .data(inside)
@@ -153,36 +149,34 @@ export default function OurProject() {
           const k = snap(origin(f)).join(',');
           const v = valRef.current[k] || { a: 0, p: 0 };
           const c = colorF(v.a, v.p);
-          if (c === tpColor) tp++; else if (c === fnColor) fn++; else if (c === fpColor) fp++;
+          if (c === tpColor) tp++;
+          else if (c === fnColor) fn++;
+          else if (c === fpColor) fp++;
           return c;
         })
         .style('opacity', 0.7);
 
-      updatePositions();
+      updatePos();
       drawChart({ tp, fn, fp });
     }
 
-    /* ⑦ SVG 위치 보정 (줌/이동) */
-    function updatePositions() {
+    /* ── SVG 위치 보정 ── */
+    function updatePos() {
       const b  = map.getBounds();
       const tl = map.latLngToLayerPoint(b.getNorthWest());
       const br = map.latLngToLayerPoint(b.getSouthEast());
 
-      svg.attr('width', br.x - tl.x)
-         .attr('height', br.y - tl.y)
-         .style('left', `${tl.x}px`)
-         .style('top',  `${tl.y}px`);
-
+      svg
+        .attr('width',  br.x - tl.x)
+        .attr('height', br.y - tl.y)
+        .style('left',  `${tl.x}px`)
+        .style('top',   `${tl.y}px`);
       g.attr('transform', `translate(${-tl.x},${-tl.y})`);
 
       if (dongGeoRef.current) {
         const geoPath = d3.geoPath().projection(
           d3.geoTransform({
-            point(x, y) {
-              const p = map.latLngToLayerPoint([y, x]);
-              // @ts-ignore
-              this.stream.point(p.x, p.y);
-            },
+            point(x, y) { const p = map.latLngToLayerPoint([y, x]); /* @ts-ignore */ this.stream.point(p.x, p.y); },
           }),
         );
         dongLayer.selectAll('path').attr('d', geoPath);
@@ -204,17 +198,18 @@ export default function OurProject() {
           return p1.y - p2.y;
         });
     }
-    map.on('moveend zoomend', updatePositions);
+    map.on('moveend zoomend', updatePos);
 
-    /* ⑧ 막대 차트 */
+    /* ── 막대 차트 ── */
     function drawChart({ tp, fn, fp }) {
       const data = [
         { label: 'True Positive',  value: tp, color: tpColor },
         { label: 'False Negative', value: fn, color: fnColor },
         { label: 'False Positive', value: fp, color: fpColor },
       ];
+
       const wrap = d3.select(chartRef.current);
-      wrap.selectAll('*').remove();
+      wrap.select('svg').remove();
 
       const m = { top: 20, right: 10, bottom: 50, left: 55 };
       const W = CHART_W - m.left - m.right;
@@ -256,7 +251,7 @@ export default function OurProject() {
         .attr('fill',   d => d.color);
     }
 
-    /* ⑨ 행정동 색상 업데이트 */
+    /* ── 행정동 색 업데이트 ── */
     function updateDongColors() {
       const counts = dongGridRef.current.map(arr => {
         let c = 0;
@@ -275,24 +270,24 @@ export default function OurProject() {
         : d3.scaleLinear().domain([min, max]).range(['#0000FF', '#FF0000']);
 
       dongLayer.selectAll('path')
-        .attr('fill', function (_, i) {
+        .attr('fill', function (_d, i) {
           const col = scale(counts[i]);
-          d3.select(this).attr('data-prev', col);   // mouseout용 저장
+          d3.select(this).attr('data-prev', col);
           return col;
         });
     }
 
-    /* ⑩ CSV 로더 */
+    /* ── CSV 로더 ── */
     function loadCsv(m) {
       d3.csv(csvPath(m)).then(csv => {
         const tmp = {};
         csv.forEach(r => {
           const k = snap([+r.경도, +r.위도]).join(',');
-          tmp[k]  = { a: +r.실제값 || 0, p: +r.예측값 || 0 };
+          tmp[k] = { a: +r.실제값 || 0, p: +r.예측값 || 0 };
         });
         valRef.current = tmp;
 
-        /* 이미 격자가 떠 있으면 색·차트 즉시 갱신 */
+        // 격자 레이어가 열려 있으면 색상 즉시 갱신
         if (gridLayerRef.current.selectAll('rect').size() > 0) {
           let tp = 0, fn = 0, fp = 0;
           gridLayerRef.current.selectAll('rect')
@@ -300,7 +295,9 @@ export default function OurProject() {
               const k = snap(origin(f)).join(',');
               const v = valRef.current[k] || { a: 0, p: 0 };
               const c = colorF(v.a, v.p);
-              if (c === tpColor) tp++; else if (c === fnColor) fn++; else if (c === fpColor) fp++;
+              if (c === tpColor) tp++;
+              else if (c === fnColor) fn++;
+              else if (c === fpColor) fp++;
               return c;
             });
           drawChart({ tp, fn, fp });
@@ -318,13 +315,13 @@ export default function OurProject() {
     if (loadCsvRef.current) loadCsvRef.current(month);
   }, [month]);
 
-  /* ─────────── 렌더 ─────────── */
+  /* ===== 렌더 ===== */
   return (
     <div className="main-container">
       <img src={introBanner} alt="Intro Banner" className="intro-banner" />
-      <h1>행정동&nbsp;→&nbsp;100&nbsp;m&nbsp;격자</h1>
+      <h1>행정동&nbsp;→&nbsp;100 m 격자</h1>
 
-      {/* 월 버튼 */}
+      {/* 월 선택 */}
       <div className="month-selector">
         {MONTHS.map(m => (
           <button
@@ -337,12 +334,11 @@ export default function OurProject() {
         ))}
       </div>
 
-      {/* 지도 + 차트 */}
       <div className="content-flex">
-        <div className="map-wrapper"><div id="map"></div></div>
+        <div className="map-wrapper"><div id="map" /></div>
         <div className="chart-wrapper">
           <h3>격자 예측 결과 개수</h3>
-          <div ref={chartRef}></div>
+          <div ref={chartRef} />
         </div>
       </div>
     </div>
