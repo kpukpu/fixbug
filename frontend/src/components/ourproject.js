@@ -59,7 +59,7 @@ export default function OurProject() {
     });
     mapRef.current = map;
 
-    /* ② 범례 */
+    /* ② 범례 (그리드용) */
     const legend = L.control({ position: 'bottomright' });
     legend.onAdd = () => {
       const d = L.DomUtil.create('div', 'legend');
@@ -201,77 +201,101 @@ export default function OurProject() {
     map.on('moveend zoomend', updatePos);
 
     /* ── 막대 차트 ── */
-    function drawChart({ tp, fn, fp }) {
-      const data = [
-        { label: 'True Positive',  value: tp, color: tpColor },
-        { label: 'False Negative', value: fn, color: fnColor },
-        { label: 'False Positive', value: fp, color: fpColor },
-      ];
+    /* ── 막대 차트 (개수 + 비율) ── *//* ── 막대 차트 (개수 + 비율 막대) ── */
+function drawChart({ tp, fn, fp }) {
+  const total  = tp + fn + fp;
+  const empty  = Math.max(0, total ? gridLayerRef.current.selectAll('rect').size() - total : 0);
+  const ratio  = empty ? tp / empty : 0;         // TP : 빈격자
 
-      const wrap = d3.select(chartRef.current);
-      wrap.select('svg').remove();
+  const data = [
+    { label: 'TP', value: tp,    color: tpColor },
+    { label: 'FN', value: fn,    color: fnColor },
+    { label: 'FP', value: fp,    color: fpColor },
+    { label: 'TP/Empty', value: ratio, color: '#ffbf00' },   // 💛 비율 막대
+  ];
 
-      const m = { top: 20, right: 10, bottom: 50, left: 55 };
-      const W = CHART_W - m.left - m.right;
-      const H = CHART_H - m.top  - m.bottom;
+  const wrap = d3.select(chartRef.current);
+  wrap.select('svg').remove();
 
-      const svgC = wrap.append('svg')
-        .attr('width',  W + m.left + m.right)
-        .attr('height', H + m.top  + m.bottom);
+  const m = { top: 20, right: 10, bottom: 60, left: 55 };
+  const W = CHART_W - m.left - m.right;
+  const H = CHART_H - m.top  - m.bottom;
 
-      const gC = svgC.append('g')
-        .attr('transform', `translate(${m.left},${m.top})`);
+  const svgC = wrap.append('svg')
+    .attr('width',  W + m.left + m.right)
+    .attr('height', H + m.top  + m.bottom);
 
-      const x = d3.scaleBand()
-        .domain(data.map(d => d.label))
-        .range([0, W])
-        .padding(0.35);
-      const y = d3.scaleLinear()
-        .domain([0, d3.max(data, d => d.value) || 1])
-        .nice()
-        .range([H, 0]);
+  const g = svgC.append('g')
+    .attr('transform', `translate(${m.left},${m.top})`);
 
-      gC.append('g')
-        .attr('transform', `translate(0,${H})`)
-        .call(d3.axisBottom(x).tickSizeOuter(0))
-        .selectAll('text')
-        .attr('transform', 'rotate(-30)')
-        .style('text-anchor', 'end');
+  const x = d3.scaleBand()
+    .domain(data.map(d => d.label))
+    .range([0, W])
+    .padding(0.35);
 
-      gC.append('g').call(d3.axisLeft(y).ticks(5));
+  const y = d3.scaleLinear()
+    .domain([0, d3.max(data, d => d.value) || 1])
+    .nice()
+    .range([H, 0]);
 
-      gC.selectAll('rect')
-        .data(data)
-        .enter()
-        .append('rect')
-        .attr('x', d => x(d.label))
-        .attr('y', d => y(d.value))
-        .attr('width',  x.bandwidth())
-        .attr('height', d => H - y(d.value))
-        .attr('fill',   d => d.color);
-    }
+  /* 축 */
+  g.append('g')
+    .attr('transform', `translate(0,${H})`)
+    .call(d3.axisBottom(x).tickSizeOuter(0))
+    .selectAll('text')
+    .attr('transform', 'rotate(-30)')
+    .style('text-anchor', 'end');
 
-    /* ── 행정동 색 업데이트 ── */
+  g.append('g').call(d3.axisLeft(y).ticks(5));
+
+  /* 막대 */
+  g.selectAll('rect')
+    .data(data)
+    .enter()
+    .append('rect')
+    .attr('x', d => x(d.label))
+    .attr('y', d => y(d.value))
+    .attr('width',  x.bandwidth())
+    .attr('height', d => H - y(d.value))
+    .attr('fill',   d => d.color);
+
+  /* 값 라벨 (개수/비율) */
+  g.selectAll('text.val')
+    .data(data)
+    .enter()
+    .append('text')
+    .attr('class', 'val')
+    .attr('x', d => x(d.label) + x.bandwidth() / 2)
+    .attr('y', d => y(d.value) - 5)
+    .attr('text-anchor', 'middle')
+    .style('font-size', '12px')
+    .text(d => d.label === 'TP/Empty'
+              ? (d.value * 100).toFixed(1) + '%'
+              : d.value);
+}
+
+    /* ── 행정동 색상 업데이트 (★ 비율 버전) ── */
     function updateDongColors() {
-      const counts = dongGridRef.current.map(arr => {
-        let c = 0;
+      // ratio = 예측 발생 격자 수 / 해당 동 전체 격자 수
+      const ratios = dongGridRef.current.map(arr => {
+        if (arr.length === 0) return 0;
+        let predicted = 0;
         arr.forEach(idx => {
           const k = snap(origin(gridGeoRef.current.features[idx])).join(',');
-          const v = valRef.current[k] || { a: 0, p: 0 };
-          if (v.a && v.p) c++;
+          const v = valRef.current[k] || { p: 0 };
+          if (v.p) predicted += 1;
         });
-        return c;
+        return predicted / arr.length;    // 0 ~ 1
       });
 
-      const min = d3.min(counts);
-      const max = d3.max(counts);
-      const scale = min === max
-        ? () => '#0000FF'
-        : d3.scaleLinear().domain([min, max]).range(['#0000FF', '#FF0000']);
+      // 0 → 파랑  |  1 → 빨강
+      const scale = d3.scaleLinear()
+                      .domain([0, 0.1])
+                      .range(['#0000FF', '#FF0000']);
 
       dongLayer.selectAll('path')
         .attr('fill', function (_d, i) {
-          const col = scale(counts[i]);
+          const col = scale(ratios[i]);
           d3.select(this).attr('data-prev', col);
           return col;
         });
@@ -319,7 +343,7 @@ export default function OurProject() {
   return (
     <div className="main-container">
       <img src={introBanner} alt="Intro Banner" className="intro-banner" />
-      <h1>행정동&nbsp;→&nbsp;100 m 격자</h1>
+      <h1>행정동&nbsp;→&nbsp;100 m&nbsp;격자</h1>
 
       {/* 월 선택 */}
       <div className="month-selector">

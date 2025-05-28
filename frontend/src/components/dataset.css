@@ -1,121 +1,79 @@
-/* ---------- 기본 레이아웃 ---------- */
-.main-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  min-height: 100vh;
-  padding-top: 90px;
+/* =======================================================================
+   dataset.css ― Feature-Importance 도넛(좌) + 범례(우) 레이아웃용
+   -----------------------------------------------------------------------
+   ‣ 우측 패널(info-container) 폭 560 px  →  도넛(최대 320 px) + 범례(190 px)
+   ‣ 글자·축만 흰색, 도넛/막대 색상은 D3 fill 유지
+   ======================================================================= */
 
-  /* 배경 */
-  background-color: #555;
-  background-image: url('dongguk_logo.png');
-  background-repeat: no-repeat;
-  background-size: 40%;
-  background-position: center;
+/* ───────── 기본 레이아웃 ───────── */
+.main-container{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  min-height:100vh;
+  padding-top:90px;
+  background:#555 url('dongguk_logo.png') no-repeat center/40%;
+}
+h1{
+  font-size:60px;
+  margin-bottom:20px;
+  color:#fff;
 }
 
-h1 {
-  font-size: 60px;
-  margin-bottom: 20px;
-  color: #ffffff;
+/* ───────── 지도 영역 ───────── */
+#map,#leaflet-map{
+  width:800px;
+  height:600px;
+  margin:20px auto;
+  border:2px solid #444;
+  position:relative;
+}
+.map-wrapper{ position:relative; flex:none; }
+
+/* ───────── D3 SVG 기본 ───────── */
+svg{ border:1px solid #ccc; margin-top:20px; }
+
+/* 행정동 폴리곤 호버 효과 */
+.adm-dong{ cursor:pointer; transition:fill .2s, opacity .2s; }
+.adm-dong:hover{ fill:#ffcc00; stroke-width:2; }
+
+/* ───────── 메인 Flex (지도 + 패널) ───────── */
+.content-flex{
+  display:flex;
+  gap:1.5rem;
+  align-items:flex-start;
+  flex-wrap:wrap;                 /* 창이 좁으면 패널이 아래로 */
 }
 
-/* ---------- 지도 ---------- */
-#map,
-#leaflet-map {
-  width: 800px;
-  height: 600px;
-  margin: 20px auto;
-  border: 2px solid #444;
-  position: relative;
+/* ───────── 우측 패널 ───────── */
+.info-container{ width:560px; }   /* 도넛 + 범례 공간 확보 */
+
+/* 패널 박스 공통 스타일 */
+.info-box{
+  background:#000;                /* 검은 배경 */
+  padding:0.8rem;
+  margin-bottom:1.2rem;
+  border-radius:6px;
 }
 
-.map-wrapper {
-  position: relative;
-  flex: none;              /* 고정폭 → 다른 flex 항목에 영향 X */
+/* SVG가 박스 가로폭 100% 차지 */
+.info-box svg{ width:100%; height:auto; display:block; background:#000; }
+
+/* ───────── 차트 글자/축 색상 ───────── */
+.info-box text, .info-container text{ fill:#fff; }
+
+/* 축 전용 .axis 클래스: 흰색 선 */
+.axis path, .axis line{
+  stroke:#fff;
+  stroke-width:0.6px;
 }
 
-/* ---------- SVG (D3) ---------- */
-svg {
-  border: 1px solid #ccc;
-  margin-top: 20px;
-}
+/* ───────── 글꼴·눈금선 두께 ───────── */
+.info-box text{ font-weight:100; font-size:15px; }
+.info-box .domain, .info-box .tick line{ stroke-width:0.2px; }
 
-/* 행정동 폴리곤 기본·호버 */
-.adm-dong {
-  cursor: pointer;
-  transition: fill 0.2s, opacity 0.2s;
+/* ───────── 반응형 ───────── */
+@media (max-width:1200px){
+  #map,#leaflet-map{ width:90%; height:auto; }
+  .info-container{ width:100%; }  /* 좁은 화면에서는 폭 100% */
 }
-.adm-dong:hover {
-  fill: #ffcc00;
-  stroke-width: 2;
-}
-
-/* ---------- Flex 레이아웃 (지도 + 패널) ---------- */
-.content-flex {
-  display: flex;
-  gap: 1.5rem;
-  align-items: flex-start;
-  flex-wrap: wrap;         /* 창이 좁아지면 패널이 아래쪽으로 */
-}
-  
-/* ---------- 우측 패널 ---------- */
-.info-container,
-.side-panel {
-  width: 420px;            /* 필요하면  ❰ 폭 조정 ❱  */
-}
-
-/* 패널 박스 공통 */
-.info-box {
-  background: #000;        /* 검은 배경 */
-  padding: 0.8rem;
-  margin-bottom: 1.2rem;
-  border-radius: 6px;
-}
-
-/* 차트 SVG가 박스 가로폭 100% 차지 */
-.info-box svg,
-.info-container svg,
-.side-panel svg {
-  width: 100%;
-  height: auto;
-  display: block;
-  background: #000;        /* 그래프 캔버스도 검은색 */
-}
-
-/* 차트 안의 글자·축/선 모두 흰색 */
-.info-box text,
-.info-box line,
-.info-box path,
-.info-container text,
-.info-container line,
-.info-container path {
-  fill: #ffffff;
-  stroke: #ffffff;
-}
-
-/* ---------- 반응형 ---------- */
-@media (max-width: 1200px) {
-  #map,
-  #leaflet-map {
-    width: 90%;
-    height: auto;
-  }
-
-  .info-container,
-  .side-panel {
-    width: 100%;           /* 좁은 화면에서는 패널도 폭 100% */
-  }
-}
-
-/* 차트 글꼴 얇게 + 축·그리드선 가늘게 ---------------------------- */
-.info-box text {          /* 모든 차트 텍스트 */
-  font-weight: 100;       /* normal */
-  font-size: 15px;        /* 필요하면 더 줄이기 */
-}
-
-.info-box .domain,        /* 축 기준선 */
-.info-box .tick line {    /* 눈금선 */
-  stroke-width: 0.2px;    /* 0.5~0.8px 사이에서 취향대로 */
-}
-
