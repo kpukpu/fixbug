@@ -251,7 +251,7 @@ function renderDonut () {
   /* ▼ 레이아웃 파라미터 */
   const fullW   = box.node().clientWidth;          // 현재 info-box 폭 (560px)
   const margin  = { top: 20, right: 20, bottom: 20, left: 20 };
-  const legendW = 190;                             // 범례 폭
+  const legendW = 200;                             // 범례 폭
   const donutSz = Math.min(320, fullW - margin.left - margin.right - legendW);
   const R       = donutSz / 2;
 

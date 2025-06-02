@@ -1,41 +1,44 @@
-// src/components/OurProject.js
+// ───────────── src/components/OurProject.js ─────────────
 import React, { useEffect, useRef, useState } from 'react';
-import L from 'leaflet';
+import L   from 'leaflet';
 import * as d3 from 'd3';
 import 'leaflet/dist/leaflet.css';
 import './ourproject.css';
 
-import introBanner from '../assets/ourproject_intro.png';
-
 export default function OurProject() {
   /* ===== 상수 ===== */
-  const GRID = 0.001;              // ≒ 100 m
-  const Z_DONG = 13;
-  const Z_GRID = 15;
-  const CHART_W = 570;
-  const CHART_H = 380;
-  const MONTHS  = [6, 7, 8, 9, 10];
-  const INITIAL_MONTH = 6;
+  const GRID_OPACITY     = 0.95;          // 모든 100 m 격자 기본 투명도
+  const DONG_OPACITY     = 0.45;          // 행정동 투명도
+  const HIGHLIGHT_COLOR  = '#FFCA1A';     // 실제 민원 격자 색
+  const GRID             = 0.001;         // ≒ 100 m
+  const Z_DONG           = 13;
+  const Z_GRID           = 15;
+  const CHART_W          = 570;
+  const CHART_H          = 380;
+  const MONTHS           = [6, 7, 8, 9, 10];
+  const INITIAL_MONTH    = 6;
 
   /* ===== ref / state ===== */
-  const svgRef       = useRef(null);
-  const chartRef     = useRef(null);
-  const mapRef       = useRef(null);
-  const dongLayerRef = useRef(null);
-  const gridLayerRef = useRef(null);
-  const dongGeoRef   = useRef(null);
-  const gridGeoRef   = useRef(null);
-  const dongGridRef  = useRef([]);      // 행정동 → 격자 index
-  const valRef       = useRef({});      // {lng,lat:{a,p}}
-  const loadCsvRef   = useRef(null);
+  const svgRef         = useRef(null);
+  const chartRef       = useRef(null);
+  const mapRef         = useRef(null);
+  const gridLayerRef   = useRef(null);
+  const dongLayerRef   = useRef(null);
+  const dongGeoRef     = useRef(null);
+  const gridGeoRef     = useRef(null);
+  const dongGridRef    = useRef([]);      // 행정동 → 격자 index
+  const valRef         = useRef({});      // {lng,lat:{a,p}}
+  const loadCsvRef     = useRef(null);
 
-  const [month, setMonth] = useState(INITIAL_MONTH);
+  const [month,      setMonth]      = useState(INITIAL_MONTH);
+  const [showActual, setShowActual] = useState(true);       // 토글 상태
 
   /* ===== 보조 ===== */
   const snap = ([x, y]) => [Math.floor(x / GRID) * GRID,
                             Math.floor(y / GRID) * GRID];
 
   const origin = f => {
+    if (!f || !f.geometry) return [0, 0];
     const g = f.geometry;
     if (g.type === 'Point')        return g.coordinates;
     if (g.type === 'Polygon')      return g.coordinates[0][0];
@@ -44,29 +47,57 @@ export default function OurProject() {
   };
   const rev = ([x, y]) => [y, x];
 
-  const tpColor = '#00FF00', fnColor = '#9b111e', fpColor = '#0000FF';
-  const csvPath = m => `${process.env.PUBLIC_URL}/data/ssookssook_${String(m).padStart(2, '0')}.csv`;
-  const colorF  = (a, p) => (a && p ? tpColor : a && !p ? fnColor : !a && p ? fpColor : '#ffffff');
+  const tpColor = '#00FF00',
+        fnColor = '#9b111e',
+        fpColor = '#0000FF';
 
-  /* ───────── 초기화 ───────── */
+  const csvPath = m =>
+    `${process.env.PUBLIC_URL}/data/ssookssook_${String(m).padStart(2, '0')}.csv`;
+
+  const baseColorF = (a, p) =>
+    a && p ? tpColor : a && !p ? fnColor : !a && p ? fpColor : '#ffffff';
+
+  /* ───────── 격자 색상만 다시 칠하기 ───────── */
+  const recolorGrid = (actualOn = showActual) => {
+    if (!gridLayerRef.current || !gridGeoRef.current) return;
+
+    gridLayerRef.current
+      .selectAll('rect')
+      .attr('fill', f => {
+        const k = snap(origin(f)).join(',');
+        const v = valRef.current[k] || { a: 0, p: 0 };
+        if (actualOn && v.a) return HIGHLIGHT_COLOR;   // 노란색
+        return baseColorF(v.a, v.p);                   // 기본색
+      })
+      .attr('fill-opacity', f => {
+        const k = snap(origin(f)).join(',');
+        const v = valRef.current[k] || { a: 0 };
+        return actualOn && v.a ? 1 : GRID_OPACITY;     // 노란색은 불투명
+      });
+  };
+
+  /* ───────── 초기화 : 단 한 번 실행 ───────── */
   useEffect(() => {
-    /* ① 지도 */
+    /* ① Leaflet 지도 */
     const map = L.map('map', {
       center: [36.348, 127.376],
       zoom  : Z_DONG,
-      layers: [L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-               { attribution: '© OpenStreetMap contributors' })],
+      layers: [
+        L.tileLayer(
+          'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+          { attribution: '© OpenStreetMap contributors' },
+        ),
+      ],
     });
     mapRef.current = map;
 
-    /* ② 범례 (그리드용) */
+    /* ② 범례 */
     const legend = L.control({ position: 'bottomright' });
     legend.onAdd = () => {
       const d = L.DomUtil.create('div', 'legend');
       d.innerHTML = `<h4>예측 결과</h4>
-        <p><span class="tp"></span> 예측 성공</p>
-        <p><span class="fn"></span> 예측 실패</p>
-        <p><span class="fp"></span> 예측했으나<br>&nbsp;&nbsp;&nbsp;실제 미발생&nbsp;</p>`;
+        <p><span class="fn"></span> 방역 필요</p>
+        <p><span class="fp"></span> 방역 필요성 X</p>`;
       return d;
     };
     legend.addTo(map);
@@ -77,11 +108,12 @@ export default function OurProject() {
     map.getPanes().overlayPane.appendChild(svgRef.current);
     const svg = d3.select(svgRef.current).style('position', 'absolute');
 
+    /* gridLayer → dongLayer */
     const g         = svg.append('g');
+    const gridLayer = g.append('g').style('pointer-events', 'none');
     const dongLayer = g.append('g');
-    const gridLayer = g.append('g').style('display', 'none');
-    dongLayerRef.current = dongLayer;
     gridLayerRef.current = gridLayer;
+    dongLayerRef.current = dongLayer;
 
     /* ④ GeoJSON 로드 */
     Promise.all([
@@ -91,7 +123,7 @@ export default function OurProject() {
       dongGeoRef.current = dongGeo;
       gridGeoRef.current = gridGeo;
 
-      /* 행정동 ↔ 격자 index 미리 계산 */
+      /* 행정동 ↔ 격자 index */
       dongGridRef.current = dongGeo.features.map(() => []);
       gridGeo.features.forEach((gf, gi) => {
         const cen = d3.geoCentroid(gf);
@@ -100,92 +132,109 @@ export default function OurProject() {
         });
       });
 
+      drawGrid();
       drawDong();
       loadCsv(INITIAL_MONTH);
     });
 
-    /* ── 행정동 경계 ── */
+    /* 전체 격자 그리기 */
+    function drawGrid() {
+      gridLayer
+        .selectAll('rect')
+        .data(gridGeoRef.current.features)
+        .enter()
+        .append('rect')
+        .attr('stroke', '#000')
+        .attr('stroke-width', 0.1)
+        .attr('fill', baseColorF(0, 0))
+        .attr('fill-opacity', GRID_OPACITY);
+
+      updatePos();
+    }
+
+    /* 행정동 경계 그리기 */
     function drawDong() {
-      dongLayer.selectAll('path')
+      dongLayer
+        .selectAll('path')
         .data(dongGeoRef.current.features)
         .enter()
         .append('path')
-        .attr('data-di', (_d, i) => i)   // index 저장
+        .attr('data-di', (_d, i) => i)
         .attr('fill', '#b1b4e2')
+        .attr('fill-opacity', DONG_OPACITY)
         .style('pointer-events', 'all')
         .attr('stroke', '#000')
         .attr('stroke-width', 1)
-        .on('mouseover', function () { d3.select(this).attr('fill', '#d3d3d3'); })
-        .on('mouseout',  function () { d3.select(this).attr('fill', d3.select(this).attr('data-prev')); })
-        .on('click', function (_e, f) { showGrid(f, this); });
+        .on('mouseover', function () {
+          d3.select(this).attr('fill', '#d3d3d3');
+        })
+        .on('mouseout', function () {
+          d3.select(this).attr('fill', d3.select(this).attr('data-prev'));
+        })
+        .on('click', function (_e, f) {
+          showGridStats(f, this);
+        });
 
       updatePos();
     }
 
-    /* ── 행정동 클릭 → 100 m 격자 ── */
-    function showGrid(dongF, elem) {
+    /* 행정동 클릭 → 통계 */
+    function showGridStats(dongF, elem) {
+      d3.select(elem).style('display', 'none');
+
+      const dongIdx = +elem.getAttribute('data-di');
+      const inside  = dongGridRef.current[dongIdx];
+
+      let tp = 0, fn = 0, fp = 0;
+      inside.forEach(idx => {
+        const f = gridGeoRef.current.features[idx];
+        const k = snap(origin(f)).join(',');
+        const v = valRef.current[k] || { a: 0, p: 0 };
+        const c = baseColorF(v.a, v.p);
+        if (c === tpColor) tp++;
+        else if (c === fnColor) fn++;
+        else if (c === fpColor) fp++;
+      });
+
       const [lng, lat] = d3.geoCentroid(dongF);
       map.setView([lat, lng], Z_GRID);
 
-      gridLayer.style('display', 'block').selectAll('*').remove(); // reset
-
-      const dongIdx = +elem.getAttribute('data-di');
-      d3.select(elem).style('display', 'none'); // 선택된 행정동 숨김
-
-      const inside = dongGridRef.current[dongIdx].map(
-        idx => gridGeoRef.current.features[idx]
-      );
-
-      // ─ 격자 rect 추가 & 색상 계산 ─
-      let tp = 0, fn = 0, fp = 0;
-      gridLayer.selectAll('rect')
-        .data(inside)
-        .enter()
-        .append('rect')
-        .style('pointer-events', 'none')
-        .attr('stroke', '#000')
-        .attr('stroke-width', 0.1)
-        .attr('fill', f => {
-          const k = snap(origin(f)).join(',');
-          const v = valRef.current[k] || { a: 0, p: 0 };
-          const c = colorF(v.a, v.p);
-          if (c === tpColor) tp++;
-          else if (c === fnColor) fn++;
-          else if (c === fpColor) fp++;
-          return c;
-        })
-        .style('opacity', 0.7);
-
-      updatePos();
       drawChart({ tp, fn, fp });
     }
 
-    /* ── SVG 위치 보정 ── */
+    /* 위치 보정 */
     function updatePos() {
       const b  = map.getBounds();
       const tl = map.latLngToLayerPoint(b.getNorthWest());
       const br = map.latLngToLayerPoint(b.getSouthEast());
 
-      svg
+      d3.select(svgRef.current)
         .attr('width',  br.x - tl.x)
         .attr('height', br.y - tl.y)
         .style('left',  `${tl.x}px`)
         .style('top',   `${tl.y}px`);
       g.attr('transform', `translate(${-tl.x},${-tl.y})`);
 
+      /* path */
       if (dongGeoRef.current) {
         const geoPath = d3.geoPath().projection(
           d3.geoTransform({
-            point(x, y) { const p = map.latLngToLayerPoint([y, x]); /* @ts-ignore */ this.stream.point(p.x, p.y); },
+            point(x, y) {
+              const p = map.latLngToLayerPoint([y, x]);
+              /* @ts-ignore */
+              this.stream.point(p.x, p.y);
+            },
           }),
         );
         dongLayer.selectAll('path').attr('d', geoPath);
       }
 
-      gridLayer.selectAll('rect')
+      /* rect */
+      gridLayer
+        .selectAll('rect')
         .attr('x', f => map.latLngToLayerPoint(rev(origin(f))).x)
         .attr('y', f => map.latLngToLayerPoint(rev(origin(f))).y)
-        .attr('width',  f => {
+        .attr('width', f => {
           const [x, y] = origin(f);
           const p1 = map.latLngToLayerPoint([y, x]);
           const p2 = map.latLngToLayerPoint([y + GRID, x + GRID]);
@@ -200,83 +249,87 @@ export default function OurProject() {
     }
     map.on('moveend zoomend', updatePos);
 
-    /* ── 막대 차트 ── */
-    /* ── 막대 차트 (개수 + 비율) ── *//* ── 막대 차트 (개수 + 비율 막대) ── */
-function drawChart({ tp, fn, fp }) {
-  const total  = tp + fn + fp;
-  const empty  = Math.max(0, total ? gridLayerRef.current.selectAll('rect').size() - total : 0);
-  const ratio  = empty ? tp / empty : 0;         // TP : 빈격자
+    /* 막대 차트 */
+    function drawChart({ tp, fn, fp }) {
+      const total = tp + fn + fp;
+      const empty = Math.max(
+        0,
+        total ? gridLayer.selectAll('rect').size() - total : 0,
+      );
+      const ratio = empty ? tp / empty : 0;
 
-  const data = [
-    { label: 'TP', value: tp,    color: tpColor },
-    { label: 'FN', value: fn,    color: fnColor },
-    { label: 'FP', value: fp,    color: fpColor },
-    { label: 'TP/Empty', value: ratio, color: '#ffbf00' },   // 💛 비율 막대
-  ];
+      const data = [
+        { label: 'TP', value: tp, color: tpColor },
+        { label: 'FN', value: fn, color: fnColor },
+        { label: 'FP', value: fp, color: fpColor },
+        { label: 'TP/Empty', value: ratio, color: '#ffbf00' },
+      ];
 
-  const wrap = d3.select(chartRef.current);
-  wrap.select('svg').remove();
+      const wrap = d3.select(chartRef.current);
+      wrap.select('svg').remove();
 
-  const m = { top: 20, right: 10, bottom: 60, left: 55 };
-  const W = CHART_W - m.left - m.right;
-  const H = CHART_H - m.top  - m.bottom;
+      const m = { top: 20, right: 10, bottom: 60, left: 55 };
+      const W = CHART_W - m.left - m.right;
+      const H = CHART_H - m.top - m.bottom;
 
-  const svgC = wrap.append('svg')
-    .attr('width',  W + m.left + m.right)
-    .attr('height', H + m.top  + m.bottom);
+      const svgC = wrap
+        .append('svg')
+        .attr('width', W + m.left + m.right)
+        .attr('height', H + m.top + m.bottom);
 
-  const g = svgC.append('g')
-    .attr('transform', `translate(${m.left},${m.top})`);
+      const g = svgC
+        .append('g')
+        .attr('transform', `translate(${m.left},${m.top})`);
 
-  const x = d3.scaleBand()
-    .domain(data.map(d => d.label))
-    .range([0, W])
-    .padding(0.35);
+      const x = d3
+        .scaleBand()
+        .domain(data.map(d => d.label))
+        .range([0, W])
+        .padding(0.35);
 
-  const y = d3.scaleLinear()
-    .domain([0, d3.max(data, d => d.value) || 1])
-    .nice()
-    .range([H, 0]);
+      const y = d3
+        .scaleLinear()
+        .domain([0, d3.max(data, d => d.value) || 1])
+        .nice()
+        .range([H, 0]);
 
-  /* 축 */
-  g.append('g')
-    .attr('transform', `translate(0,${H})`)
-    .call(d3.axisBottom(x).tickSizeOuter(0))
-    .selectAll('text')
-    .attr('transform', 'rotate(-30)')
-    .style('text-anchor', 'end');
+      g.append('g')
+        .attr('transform', `translate(0,${H})`)
+        .call(d3.axisBottom(x).tickSizeOuter(0))
+        .selectAll('text')
+        .attr('transform', 'rotate(-30)')
+        .style('text-anchor', 'end');
 
-  g.append('g').call(d3.axisLeft(y).ticks(5));
+      g.append('g').call(d3.axisLeft(y).ticks(5));
 
-  /* 막대 */
-  g.selectAll('rect')
-    .data(data)
-    .enter()
-    .append('rect')
-    .attr('x', d => x(d.label))
-    .attr('y', d => y(d.value))
-    .attr('width',  x.bandwidth())
-    .attr('height', d => H - y(d.value))
-    .attr('fill',   d => d.color);
+      g.selectAll('rect')
+        .data(data)
+        .enter()
+        .append('rect')
+        .attr('x', d => x(d.label))
+        .attr('y', d => y(d.value))
+        .attr('width', x.bandwidth())
+        .attr('height', d => H - y(d.value))
+        .attr('fill', d => d.color);
 
-  /* 값 라벨 (개수/비율) */
-  g.selectAll('text.val')
-    .data(data)
-    .enter()
-    .append('text')
-    .attr('class', 'val')
-    .attr('x', d => x(d.label) + x.bandwidth() / 2)
-    .attr('y', d => y(d.value) - 5)
-    .attr('text-anchor', 'middle')
-    .style('font-size', '12px')
-    .text(d => d.label === 'TP/Empty'
-              ? (d.value * 100).toFixed(1) + '%'
-              : d.value);
-}
+      g.selectAll('text.val')
+        .data(data)
+        .enter()
+        .append('text')
+        .attr('class', 'val')
+        .attr('x', d => x(d.label) + x.bandwidth() / 2)
+        .attr('y', d => y(d.value) - 5)
+        .attr('text-anchor', 'middle')
+        .style('font-size', '12px')
+        .text(d =>
+          d.label === 'TP/Empty'
+            ? (d.value * 100).toFixed(1) + '%'
+            : d.value,
+        );
+    }
 
-    /* ── 행정동 색상 업데이트 (★ 비율 버전) ── */
+    /* 행정동 색상 */
     function updateDongColors() {
-      // ratio = 예측 발생 격자 수 / 해당 동 전체 격자 수
       const ratios = dongGridRef.current.map(arr => {
         if (arr.length === 0) return 0;
         let predicted = 0;
@@ -285,23 +338,25 @@ function drawChart({ tp, fn, fp }) {
           const v = valRef.current[k] || { p: 0 };
           if (v.p) predicted += 1;
         });
-        return predicted / arr.length;    // 0 ~ 1
+        return predicted / arr.length;
       });
 
-      // 0 → 파랑  |  1 → 빨강
-      const scale = d3.scaleLinear()
-                      .domain([0, 0.1])
-                      .range(['#0000FF', '#FF0000']);
+      const colorScale = d3
+        .scaleLinear()
+        .domain([0, 0.1])
+        .range(['#0000FF', '#FF0000']);
 
-      dongLayer.selectAll('path')
+      dongLayer
+        .selectAll('path')
         .attr('fill', function (_d, i) {
-          const col = scale(ratios[i]);
+          const col = colorScale(ratios[i]);
           d3.select(this).attr('data-prev', col);
           return col;
-        });
+        })
+        .attr('fill-opacity', DONG_OPACITY);
     }
 
-    /* ── CSV 로더 ── */
+    /* CSV 로드 */
     function loadCsv(m) {
       d3.csv(csvPath(m)).then(csv => {
         const tmp = {};
@@ -311,30 +366,21 @@ function drawChart({ tp, fn, fp }) {
         });
         valRef.current = tmp;
 
-        // 격자 레이어가 열려 있으면 색상 즉시 갱신
-        if (gridLayerRef.current.selectAll('rect').size() > 0) {
-          let tp = 0, fn = 0, fp = 0;
-          gridLayerRef.current.selectAll('rect')
-            .attr('fill', f => {
-              const k = snap(origin(f)).join(',');
-              const v = valRef.current[k] || { a: 0, p: 0 };
-              const c = colorF(v.a, v.p);
-              if (c === tpColor) tp++;
-              else if (c === fnColor) fn++;
-              else if (c === fpColor) fp++;
-              return c;
-            });
-          drawChart({ tp, fn, fp });
-        }
+        recolorGrid();     // 첫 색칠
         updateDongColors();
       });
     }
     loadCsvRef.current = loadCsv;
 
     return () => map.remove();
-  }, []);
+  }, []);   // ← 의존성 배열 비워서 한 번만 실행
 
-  /* 월 변경 → CSV 교체 */
+  /* ───────── showActual 토글 → 색상 갱신 ───────── */
+  useEffect(() => {
+    recolorGrid(showActual);
+  }, [showActual]);
+
+  /* ───────── 월 변경 → CSV 재로드 ───────── */
   useEffect(() => {
     if (loadCsvRef.current) loadCsvRef.current(month);
   }, [month]);
@@ -342,10 +388,8 @@ function drawChart({ tp, fn, fp }) {
   /* ===== 렌더 ===== */
   return (
     <div className="main-container">
-      <img src={introBanner} alt="Intro Banner" className="intro-banner" />
       <h1>행정동&nbsp;→&nbsp;100 m&nbsp;격자</h1>
 
-      {/* 월 선택 */}
       <div className="month-selector">
         {MONTHS.map(m => (
           <button
@@ -356,10 +400,16 @@ function drawChart({ tp, fn, fp }) {
             {m}월
           </button>
         ))}
+        <button style={{ marginLeft: '1rem' }}
+                onClick={() => setShowActual(v => !v)}>
+          실제 민원 {showActual ? 'ON' : 'OFF'}
+        </button>
       </div>
 
       <div className="content-flex">
-        <div className="map-wrapper"><div id="map" /></div>
+        <div className="map-wrapper">
+          <div id="map" />
+        </div>
         <div className="chart-wrapper">
           <h3>격자 예측 결과 개수</h3>
           <div ref={chartRef} />
