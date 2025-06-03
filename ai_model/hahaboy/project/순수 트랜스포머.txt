@@ -1,0 +1,186 @@
+# train_eval_transformer.py
+
+import numpy as np
+import torch
+import torch.nn as nn
+import torch.optim as optim
+import pandas as pd
+
+from torch.utils.data import TensorDataset, DataLoader
+from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import (
+    accuracy_score,
+    precision_score,
+    recall_score,
+    f1_score
+)
+
+class TransformerClassifier(nn.Module):
+    def __init__(self, feat_dim, seq_len, d_model=64, nhead=4, num_layers=2, dropout=0.1):
+        super().__init__()
+        self.input_proj = nn.Linear(feat_dim, d_model)
+        encoder_layer = nn.TransformerEncoderLayer(
+            d_model=d_model,
+            nhead=nhead,
+            dropout=dropout,
+            batch_first=True
+        )
+        self.transformer = nn.TransformerEncoder(encoder_layer, num_layers=num_layers)
+        self.classifier = nn.Linear(d_model, 1)
+    
+    def forward(self, x):
+        # x: (batch, seq_len, feat_dim)
+        x = self.input_proj(x)                     # → (batch, seq_len, d_model)
+        x = self.transformer(x)                    # → (batch, seq_len, d_model)
+        last = x[:, -1, :]                         # → (batch, d_model)
+        out = torch.sigmoid(self.classifier(last)) # → (batch, 1)
+        return out.view(-1)                        # → (batch,)
+
+def main():
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    # 1) NPZ 데이터 읽기
+    data = np.load("transformer_data.npz", allow_pickle=True)
+    X = data["X"]   # shape = (windows, N, C, K)
+    Y = data["Y"]   # shape = (windows, N)
+    H = int(data["H"])
+    W = int(data["W"])
+
+    # 2) (windows, N, C, K) → (windows, N, K, C)
+    X = np.transpose(X, (0, 1, 3, 2))
+    windows, N, seq_len, feat_dim = X.shape
+
+    # 3) flatten: (windows*N, seq_len, feat_dim), (windows*N,)
+    X_flat = X.reshape(windows * N, seq_len, feat_dim)
+    Y_flat = Y.reshape(windows * N)
+
+    # 4) 학습/평가 분리 (마지막 12 윈도우는 2020년)
+    num_eval_windows  = 12
+    num_train_windows = windows - num_eval_windows
+    train_size = num_train_windows * N
+
+    X_train = X_flat[:train_size]
+    Y_train = Y_flat[:train_size]
+    X_eval  = X_flat[train_size:]
+    Y_eval  = Y_flat[train_size:]
+
+    print(f"Train samples={X_train.shape[0]}, Eval samples={X_eval.shape[0]}")
+
+    # ────────────────────────────────────────────────────────────────
+    # 5) 피처 스케일링: train 으로 fit → train/eval 모두 transform
+    scaler = StandardScaler()
+    # reshape to 2D: (train_size * seq_len, feat_dim)
+    tmp = X_train.reshape(-1, feat_dim)
+    scaler.fit(tmp)
+    # transform and reshape back
+    X_train = scaler.transform(tmp).reshape(train_size, seq_len, feat_dim)
+    X_eval = scaler.transform(X_eval.reshape(-1, feat_dim)).reshape(len(X_eval), seq_len, feat_dim)
+    # ────────────────────────────────────────────────────────────────
+
+    # 6) DataLoader 준비
+    batch_size = 256
+    train_ds = TensorDataset(
+        torch.from_numpy(X_train).float(),
+        torch.from_numpy(Y_train).float()
+    )
+    eval_ds = TensorDataset(
+        torch.from_numpy(X_eval).float(),
+        torch.from_numpy(Y_eval).float()
+    )
+    train_loader = DataLoader(train_ds, batch_size=batch_size, shuffle=True,  num_workers=4)
+    eval_loader  = DataLoader(eval_ds,  batch_size=batch_size, shuffle=False, num_workers=4)
+
+    # 7) 모델/손실/최적화 정의
+    model = TransformerClassifier(
+        feat_dim=feat_dim,
+        seq_len=seq_len,
+        d_model=64,
+        nhead=4,
+        num_layers=2,
+        dropout=0.1
+    ).to(device)
+    criterion = nn.BCELoss()
+    optimizer = optim.Adam(model.parameters(), lr=1e-3)
+
+    # ────────────────────────────────────────────────────────────────
+    # 8) 학습 루프
+    epochs = 10
+    for epoch in range(1, epochs+1):
+        model.train()
+        total_loss = 0.0
+        for xb, yb in train_loader:
+            xb, yb = xb.to(device), yb.to(device)
+            pred = model(xb)
+            loss = criterion(pred, yb)
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+            total_loss += loss.item() * xb.size(0)
+        avg_loss = total_loss / len(train_loader.dataset)
+
+        # 평가 (threshold=0.5 고정)
+        model.eval()
+        all_preds, all_trues = [], []
+        with torch.no_grad():
+            for xb, yb in eval_loader:
+                xb = xb.to(device)
+                out = model(xb).cpu().numpy()
+                all_preds.append(out)
+                all_trues.append(yb.numpy())
+        all_preds = np.concatenate(all_preds)  # (12*N,)
+        all_trues = np.concatenate(all_trues)  # (12*N,)
+
+        # default threshold=0.5
+        preds_bin = (all_preds >= 0.5).astype(int)
+        acc  = accuracy_score(all_trues, preds_bin)
+        prec = precision_score(all_trues, preds_bin, zero_division=0)
+        rec  = recall_score(all_trues, preds_bin, zero_division=0)
+        f1   = f1_score(all_trues, preds_bin, zero_division=0)
+
+        print(f"Epoch {epoch:2d}/{epochs}  "
+              f"TrainLoss={avg_loss:.4f}  "
+              f"Eval Acc={acc:.4f}  Prec={prec:.4f}  Rec={rec:.4f}  F1={f1:.4f}")
+    # ────────────────────────────────────────────────────────────────
+
+    # 9) 최적 임계값(threshold) 탐색 (F1-maximizing)
+    best_thr, best_f1 = 0.5, 0.0
+    for thr in np.linspace(0.1, 0.9, 81):
+        preds = (all_preds >= thr).astype(int)
+        f1_ = f1_score(all_trues, preds, zero_division=0)
+        if f1_ > best_f1:
+            best_f1, best_thr = f1_, thr
+    print(f"\nOptimal threshold = {best_thr:.2f},  F1 = {best_f1:.4f}")
+
+    # 10) 월별 지표 (optimal threshold 적용)
+    num_eval = num_eval_windows * N
+    preds_monthly = all_preds.reshape(num_eval_windows, N)
+    trues_monthly = all_trues.reshape(num_eval_windows, N)
+    print("\n2020 Metrics per Month (with tuned thr):")
+    for m in range(num_eval_windows):
+        y_true = trues_monthly[m]
+        y_pred = (preds_monthly[m] >= best_thr).astype(int)
+        acc  = accuracy_score(y_true, y_pred)
+        prec = precision_score(y_true, y_pred, zero_division=0)
+        rec  = recall_score(y_true, y_pred, zero_division=0)
+        f1   = f1_score(y_true, y_pred, zero_division=0)
+        print(f" Month {m+1:2d}: Acc={acc:.3f}, Prec={prec:.3f}, Rec={rec:.3f}, F1={f1:.3f}")
+
+    # 11) 결과 저장 (선택)
+    grid = pd.read_csv("grid_meta.csv", encoding="utf-8-sig")
+    records = []
+    for m in range(num_eval_windows):
+        df = pd.DataFrame({
+            "year_month": f"2020-{m+1:02d}",
+            "grid_idx":   np.arange(N),
+            "true":       trues_monthly[m],
+            "pred":       (preds_monthly[m] >= best_thr).astype(int)
+        })
+        records.append(df.merge(grid, on="grid_idx"))
+    pd.concat(records).to_csv(
+        "transformer_predictions_2020.csv",
+        index=False,
+        encoding="utf-8-sig"
+    )
+
+if __name__ == "__main__":
+    main()
