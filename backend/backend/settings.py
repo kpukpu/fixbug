@@ -123,7 +123,7 @@ DATABASES = {
         'NAME': 'fixbug',  # Replace with your actual database name
         'USER': 'root',                # As seen in your settings
         'PASSWORD': '1234',   # Replace with your actual password
-        'HOST': '127.0.0.1',
+        'HOST': '13.124.192.99',
         'PORT': '3306',
     }
 }
