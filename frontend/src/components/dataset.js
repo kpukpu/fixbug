@@ -169,7 +169,7 @@ const Dataset = () => {
         }
         async function sendCoordinatesToBackend([lng, lat]) {
           try {
-            const res = await fetch('http://127.0.0.1:8000/api/get_xy/', {
+            const res = await fetch('http://13.124.192.99:8000/api/get_xy/', {
               method : 'POST',
               headers: { 'Content-Type': 'application/json' },
               body   : JSON.stringify({ longitude: lng, latitude: lat }),
