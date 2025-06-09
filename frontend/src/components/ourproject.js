@@ -20,6 +20,7 @@ export default function OurProject() {
 
   /* ===== ref / state ===== */
   const svgRef         = useRef(null);
+  const lastHiddenRef = useRef(null);   // ← 직전에 사라진 행정동 보관
   const chartRef       = useRef(null);
   const mapRef         = useRef(null);
   const gridLayerRef   = useRef(null);
@@ -29,6 +30,8 @@ export default function OurProject() {
   const dongGridRef    = useRef([]);      // 행정동 → 격자 index
   const valRef         = useRef({});      // {lng,lat:{a,p}}
   const loadCsvRef     = useRef(null);
+  const downPtRef = useRef(null);   // 마우스 눌렀을 때 화면 좌표
+
 
   const [month,      setMonth]      = useState(INITIAL_MONTH);
   const [showActual, setShowActual] = useState(true);       // 토글 상태
@@ -95,9 +98,12 @@ export default function OurProject() {
     const legend = L.control({ position: 'bottomright' });
     legend.onAdd = () => {
       const d = L.DomUtil.create('div', 'legend');
-      d.innerHTML = `<h4>예측 결과</h4>
-        <p><span class="fn"></span> 방역 필요</p>
-        <p><span class="fp"></span> 방역 필요성 X</p>`;
+      d.innerHTML =
+       `<h4 style="margin:0 0 4px;">민원 발생률 높음</h4>
+        <div class="spectrum-bar"></div>
+        <div class="legend-txt">
+      <span>민원 발생률 낮음</span>
+    </div>`;
       return d;
     };
     legend.addTo(map);
@@ -171,17 +177,32 @@ export default function OurProject() {
         .on('mouseout', function () {
           d3.select(this).attr('fill', d3.select(this).attr('data-prev'));
         })
-        .on('click', function (_e, f) {
+        /*.on('click', function (_e, f) {
           showGridStats(f, this);
-        });
+        });*/
+        .on('mousedown', function (e) {
+          downPtRef.current = [e.clientX, e.clientY];
+          })
+          .on('mouseup', function (e, f) {
+            if (!downPtRef.current) return;          
+            const [x0, y0] = downPtRef.current;
+            const dx = e.clientX - x0;  
+            const dy = e.clientY - y0;
+            const moved2 = dx*dx + dy*dy;            
+             downPtRef.current = null;
+             if (moved2 < 25)  
+               showGridStats(f, this);
+              });
 
       updatePos();
     }
 
     /* 행정동 클릭 → 통계 */
     function showGridStats(dongF, elem) {
+      if (lastHiddenRef.current)
+        d3.select(lastHiddenRef.current).style('display', null);
       d3.select(elem).style('display', 'none');
-
+      lastHiddenRef.current = elem;
       const dongIdx = +elem.getAttribute('data-di');
       const inside  = dongGridRef.current[dongIdx];
 
