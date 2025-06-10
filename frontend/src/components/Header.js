@@ -13,10 +13,10 @@ const Header = () => {
           <ul className="nav-list">
             <li><Link to="/">FIXBUG</Link></li>
             <div>&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp; </div>
-            <li><Link to="/about-us">ABOUT US</Link></li>
-            <li><Link to="/data-set">DATA SET</Link></li>
-            <li><Link to="/our-project">OUR PROJECT</Link></li>
-            <li><Link to="/what">WHAT</Link></li>
+            <li><Link to="/about-us">팀원 소개</Link></li>
+            <li><Link to="/data-set">공간별 예측</Link></li>
+            <li><Link to="/our-project">년/월별 예측</Link></li>
+            <li><Link to="/what">예측 모델 소개</Link></li>
           </ul>
         </nav>
 
@@ -34,7 +34,7 @@ const Header = () => {
             onClick={(e) => e.stopPropagation()} /* 내부 클릭 시 닫힘 방지 */
           >
             <h2>문의 이메일</h2>
-            <p className="email">sipal@dgu.ac.kr</p>
+            <p className="email">이수욱&nbsp; lso2288@naver.com<br />김승주&nbsp; daejo99@naver.com<br />박찬혁&nbsp; pchishahaboy@naver.com</p>
             <button className="close-btn" onClick={() => setOpen(false)}>
               닫기
             </button>

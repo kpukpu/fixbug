@@ -28,10 +28,10 @@
 
 .project-button {
     padding: 10px 20px;
-    font-size: 50px;
+    font-size: 40px;
     border: none;
-    border-radius: 5px;
-    background-color: black;
+    border-radius: 40px 40px 40px 40px;
+    background-color: rgb(104, 5, 5);
     color: white;
     cursor: pointer;
     margin-top: 100px; /* 기존 20px에서 40px로 수정 */

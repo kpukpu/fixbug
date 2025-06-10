@@ -3,7 +3,7 @@ import "./aboutus.css";
 
 import headerImage from "../assets/about-us-image.png";
 import teamPhoto from "../assets/team_photo.png";
-import sook from "../assets/이수욱.png";
+import sook from "../assets/이수욱.jpg";
 import kim from "../assets/김승주.jpg";
 import park from "../assets/박찬혃.jpg";
 

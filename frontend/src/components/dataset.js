@@ -15,21 +15,21 @@ const Dataset = () => {
 
   /* ===== Feature-Importance 원본 데이터 ===== */
   const featureImportanceData = [
-    { feature:'위도'                 , importance:0.2032174616968298 },
-    { feature:'경도'                 , importance:0.16670527622852893 },
-    { feature:'평균_토지_공시지가'       , importance:0.048534008 },
-    { feature:'평균_토지_면적'           , importance:0.035985845188414405 },
-    { feature:'합계_토지_면적'           , importance:0.035915545 },
-    { feature:'평균_토지대장_공시지가'    , importance:0.03382206 },
-    { feature:'합계_토지필지수'          , importance:0.018259208 },
-    { feature:'합계_토지_지목수_계'       , importance:0.017903365 },
-    { feature:'인구_연령_20대'           , importance:0.017359783796625047 },
-    { feature:'합계_토지_지목수_전'       , importance:0.015415886802757003 },
-    { feature:'인구_연령_40대'           , importance:0.014241199 },
-    { feature:'합계_토지_지목수_구거'     , importance:0.014235885155369579 },
-    { feature:'최대_건축물_사용승인일'     , importance:0.013660690780757772 },
-    { feature:'인구_연령_30대'           , importance:0.012676483816991647 },
-    { feature:'평균_건물_일반_지상층수'    , importance:0.012559764048248817 },
+    { feature:'소상공인_계_업종'                 , importance:19.68456 },
+    { feature:'위도'                 , importance:16.92288 },
+    { feature:'합계_토지_면적'       , importance:16.78894 },
+    { feature:'평균_토지_면적'           , importance:15.7434 },
+    { feature:'소상공인_소매_계'           , importance:12.84356},
+    { feature:'합계_건물_건축물수_시기별_35년이상'    , importance:12.04106 },
+    { feature:'평균_토지_공시지가'          , importance:11.64274 },
+    { feature:'합계_토지_지목수_계'       , importance:11.63864 },
+    { feature:'합계_토지필지수'           , importance:11.5055 },
+    { feature:'소상공인_음식_계'       , importance:8.68998 },
+    { feature:'합계_토지_지목수_대'           , importance:8.6123 },
+    { feature:'합계_토지_지목수_답'     , importance:6.2905},
+    { feature:'합계_공동주택_건축물수_25년이상_29년이하'     , importance:4.68052 },
+    { feature:'인구_연령_30대'           , importance:4.2918 },
+    { feature:'인구_유아'    , importance:4.26126},
   ];
 
   /* ───────────────── Leaflet + D3 초기화 ───────────────── */
@@ -308,7 +308,7 @@ const Dataset = () => {
          .attr('fill',color(d.data.feature));
         g.append('text')
          .attr('x',18).attr('y',10)
-         .text(`${d.data.feature} (${d3.format('.1%')(d.data.importance)})`)
+         .text(`${d.data.feature} (${d3.format('')(d.data.importance)})`)
          .attr('fill','#fff')
          .style('font-size','12px');
       });
@@ -317,7 +317,7 @@ const Dataset = () => {
   /* ───────────────────────── JSX ───────────────────────── */
   return(
     <main className="main-content">
-      <h1>GeoJSON Grid Map</h1>
+      <h1>15~20년 기반 해충 민원 발생 공간 예측</h1>
 
       <div className="content-flex">
         {/* 지도 */}
@@ -329,14 +329,14 @@ const Dataset = () => {
         {/* 우측 패널 */}
         <div className="info-container" style={{position:'relative',zIndex:999}}>
           <div className="info-box">
-            <h2>선택한 격자 데이터</h2>
+            <h2>선택한 격자 인구 데이터</h2>
             {gridData
               ? <div ref={selectedChartRef} className="bar-chart"></div>
-              : <p>격자를 선택하면 데이터가 표시됩니다.</p>}
+              : <p>격자를 선택하면 인구 정보가 표시됩니다.</p>}
           </div>
 
           <div className="info-box">
-            <h2>Feature Importance</h2>
+            <h2>해충 민원 발생 주요 원인</h2>
             <div ref={featureChartRef} className="feature-bar-chart"></div>
           </div>
         </div>

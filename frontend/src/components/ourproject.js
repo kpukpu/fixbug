@@ -409,7 +409,7 @@ export default function OurProject() {
   /* ===== 렌더 ===== */
   return (
     <div className="main-container">
-      <h1>행정동&nbsp;→&nbsp;100 m&nbsp;격자</h1>
+      <h1>20년도&nbsp;→&nbsp;월별&nbsp;해충&nbsp;방역지&nbsp;추천</h1>
 
       <div className="month-selector">
         {MONTHS.map(m => (
@@ -423,7 +423,7 @@ export default function OurProject() {
         ))}
         <button style={{ marginLeft: '1rem' }}
                 onClick={() => setShowActual(v => !v)}>
-          실제 민원 {showActual ? 'ON' : 'OFF'}
+          기존 민원 발생지 {showActual ? 'ON' : 'OFF'}
         </button>
       </div>
 
@@ -432,7 +432,7 @@ export default function OurProject() {
           <div id="map" />
         </div>
         <div className="chart-wrapper">
-          <h3>격자 예측 결과 개수</h3>
+          <h3>민원 발생 위험 격자 수</h3>
           <div ref={chartRef} />
         </div>
       </div>

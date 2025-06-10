@@ -11,10 +11,10 @@ const MainContent = () => {
     return (
         <main className="main-content">
             <div className="content">
-                <h1>동국대학교 종합 설계</h1>
-                <h2>FIX BUG</h2>
+                <h1>대전 서구 해충 민원 발생 위험지 예측</h1>
+                <h2>FIXBUG</h2>
                 <button className="project-button" onClick={handleButtonClick}>
-                SEE OUR PROJECT
+                예측 결과 확인
                 </button>
             </div>
         </main>
