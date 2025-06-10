@@ -76,13 +76,7 @@ h1{
 #map svg{background:transparent;border:none;}
 
 /* 차트 */
-/* 패널 박스 공통 스타일 */
-.info-box{
-  background:#000;                /* 검은 배경 */
-  padding:0.8rem;
-  margin-bottom:1.2rem;
-  border-radius:6px;
-}
+
 .chart-wrapper{
   display:flex;
   flex-direction:column;
@@ -93,6 +87,23 @@ h1{
 .chart-wrapper svg{
   border:1px solid #ccc;
   margin-top:20px;
+}
+
+/* ───────── InfoBox (검은 배경 카드) ───────── */
+.info-box{
+  background:rgba(0,0,0,0.78);
+  padding:20px 24px;
+  border-radius:14px;
+  color:#fff;
+  box-shadow:0 0 8px rgba(0,0,0,0.4);
+  min-height:240px;              /* ↲ 기존: 높이 확보 */
+  display:flex;                  /* ▼ 추가 */
+  flex-direction:column;         /* ▲ 내부 문단 세로 배치 */
+}
+
+/* chart-wrapper에 info-box가 붙어 있을 때 폭 유지 */
+.chart-wrapper.info-box{
+  flex:0 0 340px;     /* 기존 chart-wrapper 폭 그대로 */
 }
 
 /* 반응형 */

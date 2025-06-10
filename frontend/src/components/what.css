@@ -1,0 +1,61 @@
+/* =======================================================================
+   what.css ― ML vs DL 성능 비교 페이지 (dataset.css 스타일 계승)
+   -----------------------------------------------------------------------
+   ‣ 좌·우 2단 패널: 각 카테고리 폭 540 px (420 px 차트 + 좌우 여백)
+   ‣ 차트 세로 320 px (dataset.css와 통일)
+   ======================================================================= */
+
+/* ───────── 기본 레이아웃 ───────── */
+.main-container{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  min-height:100vh;
+  padding-top:90px;
+  background:#555 url('dongguk_logo.png') no-repeat center/40%;
+}
+h1{
+  font-size:60px;
+  margin-bottom:20px;
+  color:#fff;
+}
+
+/* ───────── 카테고리(좌/우) ───────── */
+.content-flex{
+  display:flex;
+  gap:2rem;
+  flex-wrap:wrap;
+  justify-content:center;
+}
+.category-container{
+  width:540px;                /* 420px 차트 + 패딩 */
+}
+.category-container h2{
+  margin:0 0 0.6rem 0;
+  color:#fff;
+  font-size:1.6rem;
+}
+
+/* ───────── 공통 info-box ───────── */
+.info-box{
+  background:#000;
+  padding:0.8rem;
+  border-radius:6px;
+}
+.info-box svg{
+  width:100%;
+  height:320px;               /* dataset.css와 동일 높이 */
+  display:block;
+  background:#000;
+}
+
+/* ───────── 차트 색 / 축 ───────── */
+.bar{ fill:#4da6ff; }         /* 필요시 D3에서 동적 지정 가능 */
+.axis path,
+.axis line{ stroke:#fff; stroke-width:0.6px; }
+.axis text{ fill:#fff; font-size:14px; }
+
+/* 반응형 */
+@media (max-width:1200px){
+  .category-container{ width:100%; }
+}
