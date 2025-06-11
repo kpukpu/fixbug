@@ -14,23 +14,23 @@ const Dataset = () => {
   const [gridData, setGridData] = useState(null);
 
   /* ===== Feature-Importance 원본 데이터 ===== */
-  const featureImportanceData = [
-    { feature:'소상공인 업종 합계'                 , importance:19.68456 },
-    { feature:'위도'                 , importance:16.92288 },
-    { feature:'토지 면적 합계'       , importance:16.78894 },
-    { feature:'토지 면적 평균'           , importance:15.7434 },
-    { feature:'소상공인 소매 합계'           , importance:12.84356},
-    { feature:'35년 이상 건축물수 합계'    , importance:12.04106 },
-    { feature:'토지 공시지가 평균'          , importance:11.64274 },
-    { feature:'토지 지목수 합계'       , importance:11.63864 },
-    { feature:'토지필지수 합계'           , importance:11.5055 },
-    { feature:'소상공인 음식 합계'       , importance:8.68998 },
-    { feature:'대지 합계'           , importance:8.6123 },
-    { feature:'식물 재배 토지 합계'     , importance:6.2905},
-    { feature:'25년이상 29년이하 건축물수 합계'     , importance:4.68052 },
-    { feature:'30대 인구수'           , importance:4.2918 },
-    { feature:'유아 인구수'    , importance:4.26126},
-  ];
+const featureImportanceData = [
+  { feature:'소상공인 업종 합계'            , percent:12 },
+  { feature:'위도'                         , percent:10 },
+  { feature:'토지 면적 합계'               , percent:10 },
+  { feature:'토지 면적 평균'               , percent:10 },
+  { feature:'소상공인 소매 합계'           , percent: 8 },
+  { feature:'35년 이상 건축물수 합계'      , percent: 7 },
+  { feature:'토지 공시지가 평균'           , percent: 7 },
+  { feature:'토지 지목수 합계'             , percent: 7 },
+  { feature:'토지필지수 합계'              , percent: 7 },
+  { feature:'소상공인 음식 합계'           , percent: 5 },
+  { feature:'대지 합계'                    , percent: 5 },
+  { feature:'식물 재배 토지 합계'          , percent: 4 },
+  { feature:'25년~29년 건축물수 합계'      , percent: 3 },
+  { feature:'30대 인구수'                 , percent: 3 },
+  { feature:'유아 인구수'                 , percent: 2 },
+];
 
   /* ───────────────── Leaflet + D3 초기화 ───────────────── */
   useEffect(() => {
@@ -221,6 +221,7 @@ const Dataset = () => {
       {age:'50대'     , value:d.fifty   || 0},
       {age:'60대'     , value:d.sixty   || 0},
       {age:'70대 이상', value:d.seventy || 0},
+
     ];
 
     const fullW  = el.node().clientWidth || 420;
@@ -261,58 +262,113 @@ const Dataset = () => {
   }
 
   /* ---------- Feature-Importance 도넛 ---------- */
-  function renderDonut(){
-    const box = d3.select(featureChartRef.current);
-    box.selectAll('*').remove();
+function renderDonut () {
+  const box   = d3.select(featureChartRef.current);
+  box.selectAll('*').remove();
 
-    const fullW   = box.node().clientWidth;
-    const m       = {top:20,right:20,bottom:20,left:20};
-    const legendW = 200;
-    const donutSz = Math.min(320,fullW - m.left - m.right - legendW);
-    const R       = donutSz/2;
+  const fullW = box.node().clientWidth;                   // info-box 실제 폭
+  const padL = parseFloat(getComputedStyle(box.node()).paddingLeft)  || 0;
+  const padR = parseFloat(getComputedStyle(box.node()).paddingRight) || 0;
+  const innerW = fullW - padL - padR;   // ← 실제 그릴 수 있는 폭
+  const m     = { top:20, right:20, bottom:20, left:20 };
 
-    const svg = box.append('svg')
-      .attr('width', donutSz+legendW+m.left+m.right)
-      .attr('height',donutSz+m.top+m.bottom);
+  /* 레이아웃 기준 */
+  const legendW   = 200;   // 범례 폭
+  const gap       = 30;    // 도넛-범례 사이 간격
+  const donutMax  = 320;   // 도넛 최대 지름
+  const marginLR  = m.left + m.right + 10;  // 좌우 여유
 
-    const gDonut = svg.append('g')
-      .attr('transform',`translate(${m.left+R},${m.top+R})`);
+  /* 폭이 좁으면 범례를 아래로 */
+  const legendBelow = fullW < donutMax + legendW + gap + marginLR;
 
-    const color = d3.scaleOrdinal()
-      .domain(featureImportanceData.map(d=>d.feature))
-      .range(d3.schemeTableau10);
+  /* 도넛 지름 계산 (최소 160px 보장) */
+  let donutSz = Math.min(
+    donutMax,
+    fullW - m.left - m.right - (legendBelow ? 0 : legendW + gap)
+  );
+  donutSz = Math.max(160, donutSz);
+  const R = donutSz / 2;
 
-    const pie = d3.pie().sort(null).value(d=>d.importance);
-    const arc = d3.arc().innerRadius(R*0.55).outerRadius(R);
+  /* 전체 SVG 크기 */
+  const svg = box.append('svg')
+    .attr('width', fullW)
+    .attr('height',
+      legendBelow
+        ? donutSz + m.top + m.bottom + 200   /* 범례가 아래쪽 */
+        : donutSz + m.top + m.bottom
+    )
+    .style('max-width', '100%')
+    .style('height', 'auto');
 
-    gDonut.selectAll('path')
-      .data(pie(featureImportanceData))
-      .enter().append('path')
-      .attr('d',arc)
-      .attr('fill',d=>color(d.data.feature))
-      .attr('stroke','#000')
-      .attr('stroke-width',0.3);
+  /* ── 도넛 그룹 위치 (가로 중앙 정렬) ── */
+  const totalW = legendBelow ? donutSz : donutSz + gap + legendW;
+  const offsetX = (fullW - totalW) / 2 + R;
 
-    /* 범례 */
-    const gL = svg.append('g')
-      .attr('transform',`translate(${m.left+donutSz+30},${m.top})`);
+  const gDonut = svg.append('g')
+    .attr('transform', `translate(${offsetX},${m.top + R})`);
 
-    gL.selectAll('g')
-      .data(pie(featureImportanceData))
-      .enter().append('g')
-      .attr('transform',(d,i)=>`translate(0,${i*18})`)
-      .each(function(d){
-        const g=d3.select(this);
-        g.append('rect')
-         .attr('width',12).attr('height',12)
-         .attr('fill',color(d.data.feature));
-        g.append('text')
-         .attr('x',18).attr('y',10)
-         .text(`${d.data.feature} (${d3.format('')(d.data.importance)})`)
-         .attr('fill','#fff')
-         .style('font-size','17px');
-      });
-  }
+  /* 색상・아크 */
+  const color = d3.scaleOrdinal()
+    .domain(featureImportanceData.map(d => d.feature))
+    .range(d3.schemeTableau10);
+
+  const pie = d3.pie()
+                .sort(null)
+                .value(d => d.percent);
+
+  const arc = d3.arc()
+                .innerRadius(R * 0.55)
+                .outerRadius(R);
+
+  /* ── 도넛 ── */
+  const paths = gDonut.selectAll('path')
+    .data(pie(featureImportanceData))
+    .enter().append('path')
+    .attr('d', arc)
+    .attr('fill', d => color(d.data.feature))
+    .attr('stroke', '#000')
+    .attr('stroke-width', 0.3);
+
+  /* ✅ 각 조각 위에 % 라벨 찍기 */
+  gDonut.selectAll('text.slice-label')
+    .data(pie(featureImportanceData))
+    .enter().append('text')
+    .attr('class','slice-label')
+    .attr('transform', d => `translate(${arc.centroid(d)})`)
+    .attr('dy','0.35em')
+    .attr('text-anchor','middle')
+    .style('font-size','999x')
+    .style('fill','#fff')
+    .style('pointer-events','none')
+    .text(d => `${d.data.percent}%`);
+
+  /* ── 범례 ── */
+  const gL = svg.append('g')
+    .attr('transform',
+      legendBelow
+        ? `translate(${(fullW - legendW) / 2},${m.top + donutSz + 20})`
+        : `translate(${offsetX + R + gap},${m.top})`
+    );
+  const legendSpacing = 24; 
+
+  gL.selectAll('g')
+    .data(pie(featureImportanceData))
+    .enter().append('g')
+    .attr('transform', (d, i) => `translate(0,${i * 18})`)
+    .attr('transform', (d, i) => `translate(0,${i * legendSpacing})`)
+    .each(function (d) {
+      const g = d3.select(this);
+      g.append('rect')
+        .attr('width', 12).attr('height', 12)
+        .attr('fill', color(d.data.feature));
+      g.append('text')
+        .attr('x', 18).attr('y', 10)
+        .text(`${d.data.feature} (${d.data.percent}%)`)   /* ← % 표기 */
+        .attr('fill', '#fff')
+        .style('font-size', '19px');
+    });
+}
+
 
   /* ───────────────────────── JSX ───────────────────────── */
   return(
@@ -330,9 +386,22 @@ const Dataset = () => {
         <div className="info-container" style={{position:'relative',zIndex:999}}>
           <div className="info-box">
             <h2>선택한 격자 인구 데이터</h2>
-            {gridData
-              ? <div ref={selectedChartRef} className="bar-chart"></div>
-              : <p>격자를 선택하면 인구 정보가 표시됩니다.</p>}
+            {gridData ? (
+     <>
+       {/* ── 메타 정보 표시 ── */}
+       <div className="grid-meta">
+         <b>행정동명&nbsp;:&nbsp;</b>{gridData.h_area || '-'}<br/>
+        <b>법정동명&nbsp;:&nbsp;</b>{gridData.b_area    || '-'}<br/>
+         <b>기초구역명&nbsp;:&nbsp;</b>{gridData.g_area    || '-'}<br/>
+         <b>100 m 격자&nbsp;:&nbsp;</b>{gridData.grid_100 || '-'}
+       </div>
+
+       {/* 막대그래프 자리 */}
+       <div ref={selectedChartRef} className="bar-chart"></div>
+     </>
+   ) : (
+     <p>격자를 선택하면 인구 정보가 표시됩니다.</p>
+   )}
           </div>
 
           <div className="info-box">
