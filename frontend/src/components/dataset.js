@@ -15,21 +15,21 @@ const Dataset = () => {
 
   /* ===== Feature-Importance 원본 데이터 ===== */
   const featureImportanceData = [
-    { feature:'소상공인_계_업종'                 , importance:19.68456 },
+    { feature:'소상공인 업종 합계'                 , importance:19.68456 },
     { feature:'위도'                 , importance:16.92288 },
-    { feature:'합계_토지_면적'       , importance:16.78894 },
-    { feature:'평균_토지_면적'           , importance:15.7434 },
-    { feature:'소상공인_소매_계'           , importance:12.84356},
-    { feature:'합계_건물_건축물수_시기별_35년이상'    , importance:12.04106 },
-    { feature:'평균_토지_공시지가'          , importance:11.64274 },
-    { feature:'합계_토지_지목수_계'       , importance:11.63864 },
-    { feature:'합계_토지필지수'           , importance:11.5055 },
-    { feature:'소상공인_음식_계'       , importance:8.68998 },
-    { feature:'합계_토지_지목수_대'           , importance:8.6123 },
-    { feature:'합계_토지_지목수_답'     , importance:6.2905},
-    { feature:'합계_공동주택_건축물수_25년이상_29년이하'     , importance:4.68052 },
-    { feature:'인구_연령_30대'           , importance:4.2918 },
-    { feature:'인구_유아'    , importance:4.26126},
+    { feature:'토지 면적 합계'       , importance:16.78894 },
+    { feature:'토지 면적 평균'           , importance:15.7434 },
+    { feature:'소상공인 소매 합계'           , importance:12.84356},
+    { feature:'35년 이상 건축물수 합계'    , importance:12.04106 },
+    { feature:'토지 공시지가 평균'          , importance:11.64274 },
+    { feature:'토지 지목수 합계'       , importance:11.63864 },
+    { feature:'토지필지수 합계'           , importance:11.5055 },
+    { feature:'소상공인 음식 합계'       , importance:8.68998 },
+    { feature:'대지 합계'           , importance:8.6123 },
+    { feature:'식물 재배 토지 합계'     , importance:6.2905},
+    { feature:'25년이상 29년이하 건축물수 합계'     , importance:4.68052 },
+    { feature:'30대 인구수'           , importance:4.2918 },
+    { feature:'유아 인구수'    , importance:4.26126},
   ];
 
   /* ───────────────── Leaflet + D3 초기화 ───────────────── */
@@ -310,7 +310,7 @@ const Dataset = () => {
          .attr('x',18).attr('y',10)
          .text(`${d.data.feature} (${d3.format('')(d.data.importance)})`)
          .attr('fill','#fff')
-         .style('font-size','12px');
+         .style('font-size','17px');
       });
   }
 

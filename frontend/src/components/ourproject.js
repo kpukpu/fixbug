@@ -45,7 +45,7 @@ export default function OurProject() {
   };
   const rev = ([x,y]) => [y,x];
 
-  const tpColor='#00FF00', fnColor='#9b111e', fpColor='#0000FF';
+  const tpColor='#9b111e', fnColor='#ffffff', fpColor='#9b111e';
 
   const csvPath = m =>
     `${process.env.PUBLIC_URL}/data/ssookssook_${String(m).padStart(2,'0')}.csv`;
@@ -89,9 +89,9 @@ export default function OurProject() {
     const legend=L.control({position:'bottomright'});
     legend.onAdd=()=>{
       const d=L.DomUtil.create('div','legend');
-      d.innerHTML=`<h4 style="margin:0 0 4px;">민원 발생률 높음</h4>
+      d.innerHTML=`<h4 style="margin:0 0 4px;">민원 발생 가능성 높음</h4>
         <div class="spectrum-bar"></div>
-        <div class="legend-txt"><span>민원 발생률 낮음</span></div>`;
+        <div class="legend-txt"><span>민원 발생 가능성 낮음</span></div>`;
       return d;
     };
     legend.addTo(map);
@@ -208,9 +208,9 @@ export default function OurProject() {
       /* 메시지 사전 */
       const dict={
         red   :{title:'위험', icon:'🚨', color:'#ff4d4d',
-                desc2:'해충 방역 필요'},
+                desc2:'해충 민원 발생 확률이 매우 높습니다! <br/> 해충 방역을 권장합니다.'},
         purple:{title:'경고', icon:'⚠️', color:'#ffbf00',
-                desc2:'해충 방역 권고'},
+                desc2:'해충 민원 발생 확률이 높습니다! <br/> 해충 방역을 권고합니다.'},
         blue  :{title:'안전', icon:'👍', color:'#4da6ff',
                 desc2:'해충 민원 발생률이 저조합니다!'}
       };
@@ -331,7 +331,7 @@ export default function OurProject() {
   /* ─────────── JSX ─────────── */
   return(
     <div className="main-container">
-      <h1>20년도&nbsp;→&nbsp;월별&nbsp;해충&nbsp;방역지&nbsp;추천</h1>
+      <h1>20년도&nbsp;월별&nbsp;해충&nbsp;방역지&nbsp;추천(행정동/격자별)</h1>
 
       <div className="month-selector">
         {MONTHS.map(m=>(

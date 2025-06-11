@@ -62,8 +62,8 @@ h1{
 
 /* 지도 */
 #map{
-  width:800px;
-  height:600px;
+  width:1000px;
+  height:750px;
   border:2px solid #444;
   position:relative;
 }
@@ -171,6 +171,6 @@ h1{
   vertical-align:middle;
   border:1px solid #888;
 }
-.legend .tp{background:#00FF00;}
-.legend .fn{background:#9b111e;}
-.legend .fp{background:#0000FF;}
+.legend .tp{background:#9b111e;}
+.legend .fn{background:#bfa100;}
+.legend .fp{background:#9b111e;}

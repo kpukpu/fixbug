@@ -23,8 +23,8 @@ h1{
 
 /* ───────── 지도 영역 ───────── */
 #map,#leaflet-map{
-  width:1200px;           /* ── wider map ── */
-  height:750px;
+   width: 10000px;
+  height: 6500px;
   margin:20px auto;
   border:2px solid #444;
   position:relative;
@@ -87,7 +87,9 @@ svg{ border:1px solid #ccc; margin-top:20px; }
 .info-box .domain, .info-box .tick line{ stroke-width:0.2px; }
 
 /* ───────── 반응형 ───────── */
-@media (max-width:1400px){
-  #map,#leaflet-map{ width:90%; height:auto; }
-  .info-container{ width:100%; }
+@media (max-width:1400px) {
+  #map, #leaflet-map {
+    width: 10000px;
+    height: 6500px;
+  }
 }
