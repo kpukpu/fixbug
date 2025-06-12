@@ -7,6 +7,7 @@ import AboutUs from "./components/aboutus";
 import Dataset from "./components/dataset";
 import Ourproject from "./components/ourproject";
 import What from "./components/what";
+import Paper from "./components/paper";
 import "./App.css";
 
 function App() {
@@ -20,6 +21,7 @@ function App() {
                     <Route path="/data-set" element={<Dataset />} />
                     <Route path="/our-project" element={<Ourproject />} />
                     <Route path="/what" element={<What />} />
+                    <Route path="/paper" element={<Paper />} />
                 </Routes>
                 <Footer />
             </div>

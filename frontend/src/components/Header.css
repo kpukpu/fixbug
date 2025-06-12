@@ -1,87 +1,113 @@
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 10px 20px;
-  background-color: black;
-  color: white;
+/* ───────── 공통 ───────── */
+a { text-decoration:none; color:inherit; }
+
+/* ───────── 헤더 레이아웃 ───────── */
+.header{
+  display:flex;
+  align-items:center;
+  padding:10px 30px;        /* 좌·우 여백 */
+  background:#000;
+  color:#fff;
 }
 
-/* nav 항목들을 한 줄에 배치 */
-.nav-list {
-  list-style: none;
-  display: flex;
-  margin: 0;
-  padding: 0;
+/* 왼쪽 로고 */
+.logo a{
+  color:#fff;
+  font-weight:bold;
+  font-size:18px;
 }
 
-/* 개별 메뉴 간 여백 */
-.nav-list li {
-  margin: 0 15px;
+/* 가운데 내비게이션 */
+.main-nav{ flex:1; }        /* 남은 공간 전부 차지 */
+
+.nav-list{
+  list-style:none;
+  display:flex;
+  justify-content:center;   /* ★ 중앙 정렬 */
+  align-items:center;
+  gap:45px;                 /* 메뉴 간 간격 */
+  margin:0;
+  padding:0;
 }
 
-/* 메뉴 링크 스타일 */
-.nav-list li a {
-  text-decoration: none;
-  color: white;
-  font-weight: bold;
+.nav-list li a{
+  font-weight:bold;
 }
 
-/* flex spacer – 자동으로 남는 공간 차지 */
-.nav-list .spacer {
-  flex: 1;
+/* ───────── 드롭다운 ───────── */
+.dropdown{ position:relative; }
+
+.drop-btn{ cursor:pointer; }
+
+.dropdown-menu{
+  list-style:none;   /* ★ 이 줄 추가! */
+  display:none;
+  position:absolute;
+  top:100%; left:0;
+  background:#000;
+  border:1px solid #555;
+  min-width:180px;
+  padding:10px 0;
+  z-index:500;
 }
 
-/* 문의하기 버튼 – 기존 스타일 재사용 */
-.contact-button {
-  padding: 5px 15px;
-  border: 2px solid white;
-  background: none;
-  color: white;
-  font-size: 16px;
-  border-radius: 5px;
-  cursor: pointer;
+.dropdown-menu li{
+  margin:6px 18px;
 }
 
-
-/* (기존 헤더·네비·버튼 스타일은 그대로) */
-
-/* -------- 모달 -------- */
-.modal-backdrop {
-  position: fixed;
-  inset: 0;                 /* top/right/bottom/left: 0 */
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 999;             /* 헤더 위로 */
+.dropdown:hover .dropdown-menu,
+.dropdown:focus-within .dropdown-menu{
+  display:block;
 }
 
-.modal {
-  background: #fff;
-  padding: 25px 40px;
-  border-radius: 8px;
-  text-align: center;
-  min-width: 280px;
-  color: #000;
+.dropdown-menu a:hover{
+  text-decoration:underline;
 }
 
-.modal h2 {
-  margin-top: 0;
-  font-size: 20px;
+/* ───────── 문의하기 버튼 ───────── */
+.contact-button{
+  padding:6px 15px;
+  border:2px solid #fff;
+  background:none;
+  color:#fff;
+  font-size:15px;
+  border-radius:5px;
+  cursor:pointer;
 }
 
-.email {
-  font-weight: bold;
-  margin: 12px 0 24px;
+/* ───────── 모달 ───────── */
+.modal-backdrop{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,0.5);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  z-index:999;
 }
 
-.close-btn {
-  padding: 6px 20px;
-  font-size: 15px;
-  background: #222;
-  color: #fff;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
+.modal{
+  background:#fff;
+  color:#000;
+  padding:25px 40px;
+  border-radius:8px;
+  text-align:center;
+  min-width:280px;
+}
+
+.modal h2{ margin-top:0; font-size:20px; }
+
+.email{
+  font-weight:bold;
+  margin:12px 0 24px;
+}
+
+.close-btn{
+  padding:6px 20px;
+  font-size:15px;
+  background:#222;
+  color:#fff;
+  border:none;
+  border-radius:5px;
+  cursor:pointer;
 }

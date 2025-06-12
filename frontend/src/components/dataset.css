@@ -147,3 +147,25 @@ h1{
     min-width:auto;
   }
 }
+/* ───────── 지도 범례 ───────── */
+.map-legend{
+  background:rgba(255,255,255,0.85);
+  padding:8px 10px;
+  border-radius:4px;
+  font-size:14px;
+  color:#000;
+  line-height:18px;
+  box-shadow:0 0 4px rgba(0,0,0,0.3);
+}
+.map-legend .legend-item{
+  display:flex;
+  align-items:center;
+  margin:2px 0;
+}
+.map-legend .legend-item span{
+  width:16px;
+  height:16px;
+  margin-right:6px;
+  border:1px solid #000;
+  box-sizing:border-box;
+}

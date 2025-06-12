@@ -32,10 +32,33 @@ const featureImportanceData = [
   { feature:'유아 인구수'                 , percent: 2 },
 ];
 
+
+  /* ───────── helper: Leaflet 범례 ───────── */
+  const addLegendTo = (map) => {
+    const legend = L.control({ position: 'bottomright' });
+    legend.onAdd = () => {
+      const div = L.DomUtil.create('div', 'map-legend');
+      div.innerHTML = `
+        <div class="legend-item">
+          <span style="background:#00ff00"></span>
+          실제 민원 발생 – 예측 성공
+        </div>
+        <div class="legend-item">
+          <span style="background:#9b111e"></span>
+          실제 민원 발생 – 예측 실패
+        </div>
+        <div class="legend-item">
+          <span style="background:#0000ff"></span>
+          실제 민원 미발생 – 발생 예측
+        </div>`;
+      return div;
+    };
+    legend.addTo(map);
+  };
+
   /* ───────────────── Leaflet + D3 초기화 ───────────────── */
   useEffect(() => {
-    const gridSize = 0.001;                       // 100 m
-
+    const gridSize = 0.001; // 100 m
     /* ── ① Leaflet 지도 ── */
     const map = L.map('map', {
       center:[36.35,127.38],
@@ -45,7 +68,7 @@ const featureImportanceData = [
         { attribution:'© OpenStreetMap contributors' }
       )],
     });
-
+    addLegendTo(map); 
     /* ── ② SVG 오버레이 ── */
     map.getPanes().overlayPane.appendChild(svgRef.current);
     const svg = d3.select(svgRef.current)
@@ -164,8 +187,8 @@ const featureImportanceData = [
         };
         map.on('moveend zoomend',update);
         update();
-
         /* ── Helper ── */
+
         function align([lng,lat]){
           return [Math.floor(lng/gridSize)*gridSize,
                   Math.floor(lat/gridSize)*gridSize];
