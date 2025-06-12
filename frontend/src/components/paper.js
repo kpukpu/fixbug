@@ -12,7 +12,9 @@ const Paper = () => {
     <main className="paper-container">
 
       <section className="paper-gallery">
-        <figure>
+        <p className="paper-note">
+            이 논문은 한국정보과학회에 등재되었습니다.
+        </p><figure>
           <img src={paper1} alt="논문 페이지 1" className="paper-image" />
           
         </figure>
@@ -24,9 +26,7 @@ const Paper = () => {
 
         <figure>
           <img src={paper3} alt="논문 페이지 3" className="paper-image" />
-        <p className="paper-note">
-            이 논문은 한국정보과학회에 등재되어 있습니다.
-        </p>
+        
         </figure>
       </section>
     </main>
