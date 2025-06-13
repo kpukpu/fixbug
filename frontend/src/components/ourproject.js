@@ -244,7 +244,7 @@ drawHazardBox(level, blueCnt, {
 
       const dict = {
         red:    { title: '위험',  icon: '🚨', color: '#ff4d4d',
-                  desc:  '해충 민원 발생 확률이 매우 높습니다! <br/> 해충 방역을 권장합니다.' },
+                  desc:  '해충 민원 발생 확률이 매우 높습니다 <br/> 해충 방역을 권장합니다.' },
         purple: { title: '경고',  icon: '⚠️', color: '#ffbf00',
                   desc:  '해충 민원 발생 확률이 높습니다! <br/> 해충 방역을 권고합니다.' },
         blue:   { title: '안전',  icon: '👍', color: '#4da6ff',
@@ -265,7 +265,7 @@ drawHazardBox(level, blueCnt, {
             <div style="font-size:26px;font-weight:600">${meta.dong_name}</div>` : ''}
           <div style="font-size:34px;font-weight:700;color:${d.color}">${d.title}</div>
           <div style="font-size:54px">${d.icon}</div>
-          <div style="font-size:22px">해충 민원 발생 <b>${cnt}</b>건</div>
+
           <div style="font-size:18px">${d.desc}</div>
           ${meta.grid_100 ? `
           <div style="font-size:16px;line-height:1.6">

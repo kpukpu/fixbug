@@ -71,6 +71,7 @@ h1{
   width:720px;               /* legend를 포함할 충분한 폭 */
   max-width:100%;
   height:auto;
+  margin-top:20px;           /* #map의 top-margin(20px)과 동일 */
 }
 
 /* 패널 박스 공통 스타일 */
@@ -146,6 +147,10 @@ h1{
   .feature-bar-chart{
     min-width:auto;
   }
+    .info-container{
+    width:100%;
+    margin-top:0;   /* 세로로 쌓일 땐 여백 제거 */
+    }
 }
 /* ───────── 지도 범례 ───────── */
 .map-legend{

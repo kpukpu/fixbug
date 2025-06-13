@@ -6,7 +6,7 @@ const MainContent = () => {
     const navigate = useNavigate();
 
     const handleButtonClick = () => {
-        navigate("/data-set");
+        navigate("/our-project");
     };
     return (
         <main className="main-content">

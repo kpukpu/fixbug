@@ -29,7 +29,7 @@ const Header = () => {
             </li>
 
             <li><Link to="/our-project">년/월별 예측</Link></li>
-            <li><Link to="/what">예측 모델 소개</Link></li>
+            <li><Link to="/what">데이터 분석</Link></li>
           </ul>
         </nav>
 
