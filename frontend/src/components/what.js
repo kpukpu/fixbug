@@ -26,7 +26,7 @@ export default function What() {
     <main className="what-container">
 
       <section className="what-gallery">
-        <h1>방역 민원 데이터 요약</h1>
+        <h1>해충 민원 데이터 요약</h1>
           <img src={what1} alt="논문 페이지 1" className="what-image" />
           <img src={what2} alt="논문 페이지 2" className="what-image" />
           <img src={what3} alt="논문 페이지 3" className="what-image" />
